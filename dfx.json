@@ -6,8 +6,9 @@
     },
     "backend": {
       "dependencies": ["evm_rpc"],
-      "type": "motoko",
-      "main": "backend/Backend.mo"
+      "candid": "backend/backend.did",
+      "package": "backend",
+      "type": "rust"
     },
     "frontend": {
       "dependencies": ["backend"],
@@ -21,5 +22,5 @@
     }
   },
   "output_env_file": ".env",
-  "version": 2
+  "version": 1
 }
