@@ -15,9 +15,8 @@
             "onAutoForward": "openBrowser"
         }
     },
-    "onCreateCommand": "npm i &",
-    "postStartCommand": "dfx start --background && npm run setup",
-    "postAttachCommand": "npm start",
+    "onCreateCommand": "nohup bash -c 'dfx start &'",
+    "postAttachCommand": "([ -f nohup.out ] && (npm run setup && cat nohup.out && rm nohup.out)) || exit 0",
     "customizations": {
         "vscode": {
             "extensions": [
