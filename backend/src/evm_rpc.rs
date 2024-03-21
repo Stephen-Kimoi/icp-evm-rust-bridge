@@ -1,7 +1,7 @@
 use candid::{self, CandidType, Deserialize, Principal};
 use ic_cdk::{self, api::call::CallResult};
 
-pub const CANISTER_ID: Principal = Principal::from_slice(b"00000000023000CC0101"); // 7hfb6-caaaa-aaaar-qadga-cai
+pub const CANISTER_ID: Principal = Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
 
 #[derive(CandidType, Deserialize)]
 pub enum Auth {
