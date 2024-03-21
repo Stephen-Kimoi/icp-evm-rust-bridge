@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
+
 use candid::{self, CandidType, Deserialize, Principal};
-use ic_cdk;
+use ic_cdk::{self, api::call::CallResult};
 
 #[derive(CandidType, Deserialize)]
 pub enum Auth {
@@ -353,63 +354,28 @@ pub struct UpdateProviderArgs {
     pub providerId: u64,
 }
 
-#[ic_cdk::query]
+async fn eth_get_block_by_number(
+    can_id: Principal,
+    arg0: RpcServices,
+    arg1: Option<RpcConfig>,
+    arg2: BlockTag,
+    cycles: u128,
+  ) -> CallResult<(MultiGetBlockByNumberResult,)> {
+    ic_cdk::api::call::call_with_payment128(can_id, "eth_getBlockByNumber", (arg0,arg1,arg2,), cycles).await
+  }
+
+#[ic_cdk::update]
 async fn getLatestEthereumBlock() -> Block {
     let evm_rpc = Principal::from_text("7hfb6-caaaa-aaaar-qadga-cai").unwrap();
+    let (result,) = eth_get_block_by_number(evm_rpc, RpcServices::EthMainnet(None), None, BlockTag::Latest, 81453120000).await.unwrap();
 
-    // Define request parameters
-    let params = (
-        &RpcService::Chain(1), // Ethereum mainnet
-        "{\"jsonrpc\":\"2.0\",\"method\":\"eth_gasPrice\",\"params\":null,\"id\":1}".to_string(),
-        1000 as u64,
-    );
-
-    // Get cycles cost
-    let (cycles_result,): (Result<u128, RpcError>,) =
-        ic_cdk::api::call::call(evm_rpc, "requestCost", params.clone())
-            .await
-            .unwrap();
-    let cycles = cycles_result
-        .unwrap_or_else(|e| ic_cdk::trap(&format!("error in `request_cost`: {:?}", e)));
-
-    // Call with expected number of cycles
-    let (result,): (Result<String, RpcError>,) =
-        ic_cdk::api::call::call_with_payment128(evm_rpc, "request", params, cycles)
-            .await
-            .unwrap();
     match result {
-        Ok(response) => {
-            // Check response structure around gas price
-            assert_eq!(
-                &response[..36],
-                "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"0x"
-            );
-            assert_eq!(&response[response.len() - 2..], "\"}");
-        }
-        Err(err) => ic_cdk::trap(&format!("error in `request` with cycles: {:?}", err)),
-    }
-
-    Block {
-        baseFeePerGas: 420,
-        difficulty: 12,
-        extraData: String::new(),
-        gasLimit: 123,
-        gasUsed: 312,
-        hash: String::new(),
-        logsBloom: String::new(),
-        miner: String::new(),
-        mixHash: String::new(),
-        nonce: 23,
-        number: 23,
-        parentHash: String::new(),
-        receiptsRoot: String::new(),
-        sha3Uncles: String::new(),
-        size: 23,
-        stateRoot: String::new(),
-        timestamp: 41,
-        totalDifficulty: 12,
-        transactions: vec![],
-        transactionsRoot: None,
-        uncles: vec![],
+        MultiGetBlockByNumberResult::Consistent(r) => {
+            match r {
+                GetBlockByNumberResult::Ok(block) => block,
+                GetBlockByNumberResult::Err(err) => panic!("{err:?}"),
+            }
+        },
+        MultiGetBlockByNumberResult::Inconsistent(_) => panic!("Inconsistent result"),
     }
 }
