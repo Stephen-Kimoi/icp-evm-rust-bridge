@@ -1,0 +1,30 @@
+{
+    "name": "EVM RPC Rust",
+    "image": "ghcr.io/dfinity/icp-dev-env:5",
+    "forwardPorts": [
+        4943,
+        8080
+    ],
+    "portsAttributes": {
+        "4943": {
+            "label": "dfx",
+            "onAutoForward": "ignore"
+        },
+        "3000": {
+            "label": "dev server",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "onCreateCommand": "npm i &",
+    "postStartCommand": "dfx start --background && npm run setup",
+    "postAttachCommand": "npm start",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dfinity-foundation.vscode-motoko",
+                "tamasfe.even-better-toml",
+                "rust-lang.rust-analyzer"
+            ]
+        }
+    }
+}
