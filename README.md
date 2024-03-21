@@ -1,8 +1,14 @@
-# Vite + React + Motoko + EVM RPC
+# Vite + React + Rust + EVM RPC
 
 ### Get started directly in your browser:
+In Gitpod 
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/rvanasa/vite-react-motoko/tree/evm-rpc)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/fxgst/evm-rpc-rust/tree/rust)
+
+or GitHub Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/fxgst/evm-rpc-rust/tree/rust?quickstart=1)
+
 
 This template gives you everything you need to build a full-stack Web3 application on the [Internet Computer](https://internetcomputer.org/).
 
@@ -31,8 +37,7 @@ When ready, run `dfx deploy --network ic` to deploy your application to the Inte
 - [TypeScript](https://www.typescriptlang.org/): JavaScript extended with syntax for types
 - [Sass](https://sass-lang.com/): an extended syntax for CSS stylesheets
 - [Prettier](https://prettier.io/): code formatting for a wide range of supported languages
-- [Motoko](https://github.com/dfinity/motoko#readme): a safe and simple programming language for the Internet Computer
-- [mo-dev](https://github.com/dfinity/motoko-dev-server#readme): a live reload development server for Motoko
+- [Rust CDK](https://docs.rs/ic-cdk/): the Canister Development Kit for Rust
 - [EVM RPC canister](https://github.com/internet-computer-protocol/evm-rpc-canister): call Ethereum RPC methods from the Internet Computer
 
 ## 📚 Documentation
@@ -41,7 +46,7 @@ When ready, run `dfx deploy --network ic` to deploy your application to the Inte
 - [React quick start guide](https://react.dev/learn)
 - [Internet Computer docs](https://internetcomputer.org/docs/current/developer-docs/ic-overview)
 - [`dfx.json` reference schema](https://internetcomputer.org/docs/current/references/dfx-json-reference/)
-- [Motoko developer docs](https://internetcomputer.org/docs/current/developer-docs/build/cdks/motoko-dfinity/motoko/)
+- [Rust developer docs](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
 - [EVM RPC developer docs](https://internetcomputer.org/docs/current/developer-docs/integrations/ethereum/evm-rpc/)
 
 ## 💡 Tips and Tricks

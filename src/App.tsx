@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import './App.scss';
-import motokoLogo from './assets/motoko_moving.png';
-import motokoShadowLogo from './assets/motoko_shadow.png';
+import rustLogo from './assets/rust.svg';
 import reactLogo from './assets/react.svg';
 import ethLogo from './assets/eth.svg';
 import { backend } from './declarations/backend';
@@ -43,20 +42,15 @@ function App() {
           <img src={ethLogo} className="logo ethereum" alt="Ethereum logo" />
         </a>
         <a
-          href="https://internetcomputer.org/docs/current/developer-docs/build/cdks/motoko-dfinity/motoko/"
+          href="https://internetcomputer.org/docs/current/developer-docs/backend/rust/"
           target="_blank"
         >
           <span className="logo-stack">
-            <img
-              src={motokoShadowLogo}
-              className="logo motoko-shadow"
-              alt="Motoko logo"
-            />
-            <img src={motokoLogo} className="logo motoko" alt="Motoko logo" />
+            <img src={rustLogo} className="logo rust" alt="Rust logo" />
           </span>
         </a>
       </div>
-      <h1 style={{ paddingLeft: 36 }}>React + EVM RPC + Motoko</h1>
+      <h1 style={{ paddingLeft: 36 }}>React + EVM RPC + Rust</h1>
       <div className="card" style={{ opacity: loading ? 0.5 : 1 }}>
         <button onClick={fetchBlock}>Get latest block</button>
         {!!block && (
@@ -74,7 +68,7 @@ function App() {
         {!!loading && !block && !error && <div className="loader" />}
       </div>
       <p className="read-the-docs">
-        Click on the React, Motoko, and Ethereum logos to learn more
+        Click on the React, Ethereum, and Rust logos to learn more
       </p>
     </div>
   );
