@@ -1,25 +1,22 @@
 #![allow(non_snake_case)]
 
 mod evm_rpc;
-use candid::Principal;
 use evm_rpc::{
     eth_get_block_by_number, Block, BlockTag, GetBlockByNumberResult, MultiGetBlockByNumberResult,
-    RpcServices,
+    RpcServices, CANISTER_ID
 };
-
-const EVM_RPC: Principal = Principal::from_slice(b"00000000023000CC0101"); // 7hfb6-caaaa-aaaar-qadga-cai
 
 #[ic_cdk::update]
 async fn getLatestEthereumBlock() -> Block {
     let (result,) = eth_get_block_by_number(
-        EVM_RPC,
+        CANISTER_ID,
         RpcServices::EthMainnet(None),
         None,
         BlockTag::Latest,
         81453120000,
     )
     .await
-    .unwrap();
+    .expect("Call failed");
 
     match result {
         MultiGetBlockByNumberResult::Consistent(r) => match r {
