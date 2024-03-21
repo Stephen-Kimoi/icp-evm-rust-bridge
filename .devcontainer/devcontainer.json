@@ -16,7 +16,7 @@
         }
     },
     "onCreateCommand": "nohup bash -c 'dfx start &'",
-    "postAttachCommand": "([ -f nohup.out ] && (npm run setup && cat nohup.out && rm nohup.out)) || exit 0",
+    "postAttachCommand": "([ -f nohup.out ] && (npm run setup && cat nohup.out && rm nohup.out && npm start)) || exit 0",
     "customizations": {
         "vscode": {
             "extensions": [
