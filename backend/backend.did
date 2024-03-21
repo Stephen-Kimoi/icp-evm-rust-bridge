@@ -1,0 +1,28 @@
+type Block = 
+ record {
+   baseFeePerGas: nat;
+   difficulty: nat;
+   extraData: text;
+   gasLimit: nat;
+   gasUsed: nat;
+   hash: text;
+   logsBloom: text;
+   miner: text;
+   mixHash: text;
+   nonce: nat;
+   number: nat;
+   parentHash: text;
+   receiptsRoot: text;
+   sha3Uncles: text;
+   size: nat;
+   stateRoot: text;
+   timestamp: nat;
+   totalDifficulty: nat;
+   transactions: vec text;
+   transactionsRoot: opt text;
+   uncles: vec text;
+ };
+service : {
+  /// Retrieve the latest block on the Ethereum blockchain.
+  getLatestEthereumBlock: () -> (Block);
+}
