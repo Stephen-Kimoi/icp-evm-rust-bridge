@@ -2,18 +2,18 @@
 
 mod evm_rpc;
 use evm_rpc::{
-    eth_get_block_by_number, Block, BlockTag, GetBlockByNumberResult, MultiGetBlockByNumberResult,
-    RpcServices, CANISTER_ID
+    Block, BlockTag, EvmRpcCanister, GetBlockByNumberResult, MultiGetBlockByNumberResult,
+    RpcServices,
 };
 
 #[ic_cdk::update]
 async fn getLatestEthereumBlock() -> Block {
-    let (result,) = eth_get_block_by_number(
-        CANISTER_ID,
+    let cycles = 10_000_000_000;
+    let (result,) = EvmRpcCanister::eth_get_block_by_number(
         RpcServices::EthMainnet(None),
         None,
         BlockTag::Latest,
-        81453120000,
+        cycles,
     )
     .await
     .expect("Call failed");
