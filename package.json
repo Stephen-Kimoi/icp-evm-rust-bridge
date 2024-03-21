@@ -14,9 +14,7 @@
     "test": "run-s test:backend test:frontend",
     "test:frontend": "vitest run",
     "test:backend": "mo-test",
-    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\" \"backend/**/*.mo\"",
-    "sources": "mops sources",
-    "postinstall": "mops install"
+    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\" \"backend/**/*.mo\""
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -34,7 +32,6 @@
     "@vitejs/plugin-react": "^4.0.1",
     "cross-fetch": "^3.1.6",
     "dotenv": "^16.3.1",
-    "ic-mops": "^0.39.2",
     "jsdom": "^22.1.0",
     "mo-dev": "^0.11.2",
     "npm-run-all": "^4.1.5",

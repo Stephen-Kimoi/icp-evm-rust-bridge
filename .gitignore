@@ -29,7 +29,6 @@ dist-ssr
 /deps
 .dfx
 .vessel
-.mops
 
 # Environment variables
 .env
