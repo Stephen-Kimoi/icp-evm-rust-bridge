@@ -21,7 +21,9 @@ Make sure that [Node.js](https://nodejs.org/en/) `>= 16` and [`dfx`](https://int
 Run the following commands in a new, empty project directory:
 
 ```sh
-npx degit rvanasa/vite-react-motoko#evm-rpc # Download this starter project
+git clone https://github.com/fxgst/evm-rpc-rust.git # Download this starter project
+cd evm-rpc-rust
+git checkout rust
 dfx start --clean --background # Run dfx in the background
 npm run setup # Install packages, deploy canisters, and generate type bindings
 
@@ -52,5 +54,5 @@ When ready, run `dfx deploy --network ic` to deploy your application to the Inte
 ## 💡 Tips and Tricks
 
 - Customize your project's code style by editing the `.prettierrc` file and then running `npm run format`.
-- Reduce the latency of update calls by passing the `--emulator` flag to `dfx start`.
+- If the links printed by dfx do not work in Codespaces, run `./scripts/canister_urls.py` and click the links shown there.
 - Split your frontend and backend console output by running `npm run frontend` and `npm run backend` in separate terminals.
