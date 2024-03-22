@@ -57,13 +57,14 @@ When ready, run `dfx deploy --network ic` to deploy your application to the ICP 
 
 ## 📚 Documentation
 
+- [Internet Computer docs](https://internetcomputer.org/docs/current/developer-docs/ic-overview)
+- [Internet Computer wiki](https://wiki.internetcomputer.org/)
+- [Internet Computer forum](https://forum.dfinity.org/)
 - [Vite developer docs](https://vitejs.dev/guide/)
 - [React quick start guide](https://react.dev/learn)
-- [Internet Computer docs](https://internetcomputer.org/docs/current/developer-docs/ic-overview)
 - [`dfx.json` reference schema](https://internetcomputer.org/docs/current/references/dfx-json-reference/)
 - [Rust developer docs](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
 - [EVM RPC developer docs](https://internetcomputer.org/docs/current/developer-docs/integrations/ethereum/evm-rpc/)
-- [ICP Forum](https://forum.dfinity.org/)
 - [Developer Experience Feedback Board](https://dx.internetcomputer.org/)
 
 
