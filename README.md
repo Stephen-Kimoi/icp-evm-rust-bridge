@@ -20,15 +20,15 @@ If you have Docker and VS Code installed, click the following button to get imme
 
 [![Open locally in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/fxgst/evm-rpc-rust)
 
-Make sure that [Node.js](https://nodejs.org/en/) `>= 16` and [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.14` are installed on your system.
+Make sure that [Node.js](https://nodejs.org/en/) `>= 16` and [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.18` are installed on your system.
 
 Run the following commands in a new, empty project directory:
 
 ```sh
 git clone https://github.com/fxgst/evm-rpc-rust.git # Download this starter project
 cd evm-rpc-rust
-git checkout rust
 dfx start --clean --background # Run dfx in the background
+npm install # Install project dependencies
 npm run setup # Install packages, deploy canisters, and generate type bindings
 
 npm start # Start the development server
@@ -57,6 +57,6 @@ When ready, run `dfx deploy --network ic` to deploy your application to the Inte
 
 ## 💡 Tips and Tricks
 
+- If the links printed by dfx do not work in Codespaces, run `./canister_urls.py` and click the links shown there.
 - Customize your project's code style by editing the `.prettierrc` file and then running `npm run format`.
-- If the links printed by dfx do not work in Codespaces, run `./scripts/canister_urls.py` and click the links shown there.
 - Split your frontend and backend console output by running `npm run frontend` and `npm run backend` in separate terminals.
