@@ -24,6 +24,8 @@ async fn getLatestEthereumBlock() -> Block {
             GetBlockByNumberResult::Ok(block) => block,
             GetBlockByNumberResult::Err(err) => panic!("{err:?}"),
         },
-        MultiGetBlockByNumberResult::Inconsistent(_) => panic!("Inconsistent result"),
+        MultiGetBlockByNumberResult::Inconsistent(_) => {
+            panic!("RPC providers gave inconsistent results")
+        }
     }
 }
