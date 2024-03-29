@@ -1,28 +1,42 @@
-type Block = 
- record {
-   baseFeePerGas: nat;
-   difficulty: nat;
-   extraData: text;
-   gasLimit: nat;
-   gasUsed: nat;
-   hash: text;
-   logsBloom: text;
-   miner: text;
-   mixHash: text;
-   nonce: nat;
-   number: nat;
-   parentHash: text;
-   receiptsRoot: text;
-   sha3Uncles: text;
-   size: nat;
-   stateRoot: text;
-   timestamp: nat;
-   totalDifficulty: nat;
-   transactions: vec text;
-   transactionsRoot: opt text;
-   uncles: vec text;
- };
+type Block = record {
+  baseFeePerGas : nat;
+  difficulty : nat;
+  extraData : text;
+  gasLimit : nat;
+  gasUsed : nat;
+  hash : text;
+  logsBloom : text;
+  miner : text;
+  mixHash : text;
+  nonce : nat;
+  number : nat;
+  parentHash : text;
+  receiptsRoot : text;
+  sha3Uncles : text;
+  size : nat;
+  stateRoot : text;
+  timestamp : nat;
+  totalDifficulty : nat;
+  transactions : vec text;
+  transactionsRoot : opt text;
+  uncles : vec text;
+};
+
+type EcdsaPublicKeyResponse = record {
+  /// An ECDSA public key encoded in SEC1 compressed form.
+  public_key : blob;
+  /// Can be used to deterministically derive child keys of the public_key.
+  chain_code : blob;
+};
+
+type SignWithEcdsaResponse = record {
+  /// Encoded as the concatenation of the SEC1 encodings of the two values r and s.
+  signature : blob;
+};
+
 service : {
   /// Retrieve the latest block on the Ethereum blockchain.
-  getLatestEthereumBlock: () -> (Block);
-}
+  get_latest_ethereum_block : () -> (Block);
+  get_ecdsa_public_key : () -> (EcdsaPublicKeyResponse);
+  sign_hash_with_ecdsa : (blob) -> (SignWithEcdsaResponse);
+};

@@ -19,7 +19,7 @@ function App() {
     try {
       setLoading(true);
       setError(undefined);
-      const block = await backend.getLatestEthereumBlock();
+      const block = await backend.get_latest_ethereum_block();
       setBlock(block);
     } catch (err) {
       console.error(err);

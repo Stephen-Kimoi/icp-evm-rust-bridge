@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use candid::{self, CandidType, Deserialize, Principal};
 use ic_cdk::{self, api::call::CallResult};
 
