@@ -1,7 +1,7 @@
 mod evm_rpc;
 use evm_rpc::{
     Block, BlockTag, EthMainnetService, EvmRpcCanister, GetBlockByNumberResult,
-    MultiGetBlockByNumberResult, RpcApi, RpcServices,
+    MultiGetBlockByNumberResult, RpcServices,
 };
 use ic_cdk::api::management_canister::ecdsa::{
     ecdsa_public_key, sign_with_ecdsa, EcdsaCurve, EcdsaKeyId, EcdsaPublicKeyArgument,
@@ -11,14 +11,7 @@ use ic_cdk::api::management_canister::ecdsa::{
 #[ic_cdk::update]
 async fn get_latest_ethereum_block() -> Block {
     let cycles = 10_000_000_000;
-    // let rpc_providers = RpcServices::EthMainnet(Some(vec![EthMainnetService::Cloudflare]));
-    let rpc_providers = RpcServices::Custom {
-        chainId: 8217,
-        services: vec![RpcApi {
-            url: "https://1rpc.io/klay".to_string(),
-            headers: None,
-        }],
-    };
+    let rpc_providers = RpcServices::EthMainnet(Some(vec![EthMainnetService::Cloudflare]));
 
     let (result,) =
         EvmRpcCanister::eth_get_block_by_number(rpc_providers, None, BlockTag::Latest, cycles)
