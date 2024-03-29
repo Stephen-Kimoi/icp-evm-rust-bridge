@@ -10,9 +10,9 @@ use ic_cdk::api::management_canister::ecdsa::{
 
 #[ic_cdk::update]
 async fn get_latest_ethereum_block() -> Block {
-    let cycles = 10_000_000_000;
     let rpc_providers = RpcServices::EthMainnet(Some(vec![EthMainnetService::Cloudflare]));
 
+    let cycles = 10_000_000_000;
     let (result,) =
         EvmRpcCanister::eth_get_block_by_number(rpc_providers, None, BlockTag::Latest, cycles)
             .await
