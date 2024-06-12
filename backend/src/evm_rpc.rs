@@ -357,6 +357,8 @@ pub struct UpdateProviderArgs {
     pub providerId: u64,
 }
 
+pub struct Service(pub Principal); 
+
 pub struct EvmRpcCanister;
 impl EvmRpcCanister {
     pub async fn eth_get_block_by_number(
@@ -373,4 +375,24 @@ impl EvmRpcCanister {
         )
         .await
     }
+} 
+
+impl Service {
+    pub async fn request(
+        &self,
+        arg0: RpcService,
+        arg1: String,
+        arg2: u64,
+        cycles: u64,
+    ) -> CallResult<(RequestResult,)> {
+        ic_cdk::api::call::call_with_payment(
+            self.0,
+            "request",
+            (arg0, arg1, arg2),
+            cycles,
+        )
+        .await
+    }
 }
+
+pub const EVM_RPC: Service = Service(CANISTER_ID); 

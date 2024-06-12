@@ -1,4 +1,5 @@
 mod evm_rpc;
+mod eth_call;
 use evm_rpc::{
     Block, BlockTag, EthMainnetService, EvmRpcCanister, GetBlockByNumberResult,
     MultiGetBlockByNumberResult, RpcServices,
