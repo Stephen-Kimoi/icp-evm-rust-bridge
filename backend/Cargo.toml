@@ -15,6 +15,7 @@ getrandom = { version = "0.2", features = ["custom"] }
 hex = "0.4.3"
 ic-cdk = "0.13"
 ic-cdk-timers = "0.7"   # Feel free to remove this dependency if you don't need timers
+k256 = "0.13.3"
 serde = "1.0.197"
 serde_bytes = "0.11.14"
 serde_json = "1.0.116"

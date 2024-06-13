@@ -24,7 +24,10 @@ type Block = record {
 type EcdsaPublicKeyResponse = record { public_key : blob; chain_code : blob };
 type SignWithEcdsaResponse = record { signature : blob };
 service : {
-  call_increase_count : () -> (nat64);
+  call_decrease_count : () -> (text);
+  call_increase_count : () -> (text);
+  get_canister_eth_address : () -> (text);
+  get_count : () -> (nat64);
   get_ecdsa_public_key : () -> (EcdsaPublicKeyResponse);
   get_latest_ethereum_block : () -> (Block);
   sign_hash_with_ecdsa : (blob) -> (SignWithEcdsaResponse);
