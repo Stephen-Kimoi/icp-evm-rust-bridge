@@ -5,25 +5,55 @@ import reactLogo from './assets/react.svg';
 import ethLogo from './assets/eth.svg';
 import { backend } from './declarations/backend';
 import { Block } from './declarations/backend/backend.did';
-
-// JSON viewer component
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
+import { BarLoader } from 'react-spinners';
 
 function App() {
   const [loading, setLoading] = useState(false);
   const [block, setBlock] = useState<Block | undefined>();
-  const [error, setError] = useState<string | undefined>();
+  const [canisterEthAddress, setCanisterEthAddress] = useState<string | undefined>();
+  const [count, setCount] = useState<number | undefined>();
 
   const fetchBlock = async () => {
     try {
       setLoading(true);
-      setError(undefined);
       const block = await backend.get_latest_ethereum_block();
       setBlock(block);
+      toast.success('Latest Ethereum block fetched successfully!');
     } catch (err) {
       console.error(err);
-      setError(String(err));
+      toast.error('Failed to fetch the latest Ethereum block.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCanisterEthAddress = async () => {
+    try {
+      setLoading(true);
+      const address = await backend.get_canister_eth_address();
+      setCanisterEthAddress(address);
+      toast.success('Canister Ethereum address fetched successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch the canister Ethereum address.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCount = async () => {
+    try {
+      setLoading(true);
+      const count = await backend.get_count();
+      setCount(Number(count));
+      toast.success('Count fetched successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch the count.');
     } finally {
       setLoading(false);
     }
@@ -31,6 +61,7 @@ function App() {
 
   return (
     <div className="App">
+
       <div>
         <a href="https://reactjs.org" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />
@@ -50,11 +81,28 @@ function App() {
           </span>
         </a>
       </div>
+
       <h1 style={{ paddingLeft: 36 }}>React + EVM RPC + Rust</h1>
       <div className="card" style={{ opacity: loading ? 0.5 : 1 }}>
-        <button onClick={fetchBlock}>Get latest block</button>
+        <div className="button-group">
+          <button className="fancy-button" onClick={fetchBlock}>
+            Get Latest Block
+          </button>
+          <button className="fancy-button" onClick={fetchCanisterEthAddress}>
+            Get Canister ETH Address
+          </button>
+          <button className="fancy-button" onClick={fetchCount}>
+            Get Count
+          </button>
+        </div>
+        {loading && (
+          <div className="loader">
+            <BarLoader color="#36d7b7" width={200} />
+          </div>
+        )}
         {!!block && (
           <pre className="json-view">
+            <h3>Latest Ethereum Block:</h3>
             <JsonView
               data={block}
               shouldExpandNode={allExpanded}
@@ -62,16 +110,26 @@ function App() {
             />
           </pre>
         )}
-        {!!error && (
-          <pre style={{ textAlign: 'left', color: 'grey' }}>{error}</pre>
+        {!!canisterEthAddress && (
+          <pre className="result">
+            <h3>Canister Ethereum Address:</h3>
+            <p>{canisterEthAddress}</p>
+          </pre>
         )}
-        {!!loading && !block && !error && <div className="loader" />}
+        {count !== undefined && (
+          <pre className="result">
+            <h3>Count:</h3>
+            <p>{count}</p>
+          </pre>
+        )}
       </div>
       <p className="read-the-docs">
         Click on the React, Ethereum, and Rust logos to learn more
       </p>
+      <ToastContainer position="bottom-right" />
     </div>
   );
 }
 
 export default App;
+
