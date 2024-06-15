@@ -3,6 +3,7 @@ import './App.scss';
 import rustLogo from './assets/rust.svg';
 import reactLogo from './assets/react.svg';
 import ethLogo from './assets/eth.svg';
+import icpLogo from './assets/ICP.png';
 import { backend } from './declarations/backend';
 import { Block } from './declarations/backend/backend.did';
 import { ToastContainer, toast } from 'react-toastify';
@@ -59,13 +60,38 @@ function App() {
     }
   };
 
+  const increaseCount = async () => {
+    try {
+      setLoading(true);
+      await backend.call_increase_count();
+      toast.success('Count increased successfully!');
+      fetchCount(); // Refresh the count after increasing
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to increase the count.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const decreaseCount = async () => {
+    try {
+      setLoading(true);
+      await backend.call_decrease_count();
+      toast.success('Count decreased successfully!');
+      fetchCount(); // Refresh the count after decreasing
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to decrease the count.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="App">
 
       <div>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
         <a
           href="https://github.com/internet-computer-protocol/evm-rpc-canister#readme"
           target="_blank"
@@ -77,17 +103,21 @@ function App() {
           target="_blank"
         >
           <span className="logo-stack">
-            <img src={rustLogo} className="logo rust" alt="Rust logo" />
+            <img src={icpLogo} className="logo rust" alt="Rust logo" />
           </span>
         </a>
       </div>
 
-      <h1 style={{ paddingLeft: 36 }}>React + EVM RPC + Rust</h1>
+      <h1 style={{ paddingLeft: 36 }}>Chain fusion: ICP + EVM Starter</h1>
+      
+      <p className="read-the-docs">
+        Interact with smart contract deployed on Ethereum using ICP's Rust canister 
+      </p>
+
       <div className="card" style={{ opacity: loading ? 0.5 : 1 }}>
+
+        <h2>Read Functionality</h2>
         <div className="button-group">
-          <button className="fancy-button" onClick={fetchBlock}>
-            Get Latest Block
-          </button>
           <button className="fancy-button" onClick={fetchCanisterEthAddress}>
             Get Canister ETH Address
           </button>
@@ -95,6 +125,17 @@ function App() {
             Get Count
           </button>
         </div>
+
+        <h2>Write Functionality</h2>
+        <div className="button-group">
+          <button className="fancy-button" onClick={increaseCount}>
+            Increase Count
+          </button>
+          <button className="fancy-button" onClick={decreaseCount}>
+            Decrease Count
+          </button>
+        </div>
+
         {loading && (
           <div className="loader">
             <BarLoader color="#36d7b7" width={200} />
@@ -123,9 +164,7 @@ function App() {
           </pre>
         )}
       </div>
-      <p className="read-the-docs">
-        Click on the React, Ethereum, and Rust logos to learn more
-      </p>
+
       <ToastContainer position="bottom-right" />
     </div>
   );
