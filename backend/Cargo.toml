@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 candid = "0.10"
 ethers-core = "2.0.14"
+generic-array = "1.0.0"
 getrandom = { version = "0.2", features = ["custom"] } 
 hex = "0.4.3"
 ic-cdk = "0.13"
@@ -19,3 +20,4 @@ k256 = "0.13.3"
 serde = "1.0.197"
 serde_bytes = "0.11.14"
 serde_json = "1.0.116"
+sha2 = "0.10.8"

@@ -276,10 +276,11 @@ pub enum MultiGetTransactionReceiptResult {
 
 #[derive(CandidType, Deserialize)]
 pub enum SendRawTransactionStatus {
-    Ok,
-    NonceTooLow,
-    NonceTooHigh,
-    InsufficientFunds,
+    Ok(String),
+    Err(String),
+    // NonceTooLow,
+    // NonceTooHigh,
+    // InsufficientFunds,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -292,6 +293,13 @@ pub enum SendRawTransactionResult {
 pub enum MultiSendRawTransactionResult {
     Consistent(SendRawTransactionResult),
     Inconsistent(Vec<(RpcService, SendRawTransactionResult)>),
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct ConfigArgs {
+    pub timeout: Option<u64>,
+    pub max_response_bytes: Option<u64>,
+    // Any other configuration options needed
 }
 
 #[derive(CandidType, Deserialize)]
@@ -361,6 +369,7 @@ pub struct Service(pub Principal);
 
 pub struct EvmRpcCanister;
 impl EvmRpcCanister {
+
     pub async fn eth_get_block_by_number(
         services: RpcServices,
         config: Option<RpcConfig>,
@@ -375,6 +384,22 @@ impl EvmRpcCanister {
         )
         .await
     }
+
+    pub async fn eth_sendRawTransaction(
+        services: RpcServices,
+        config: Option<ConfigArgs>,
+        raw_tx: String,
+        cycles: u128,
+    ) -> CallResult<(MultiSendRawTransactionResult,)> {
+        ic_cdk::api::call::call_with_payment128(
+            CANISTER_ID,
+            "eth_sendRawTransaction",
+            (services, config, raw_tx),
+            cycles,
+        )
+        .await
+    }
+
 } 
 
 impl Service {

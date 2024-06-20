@@ -21,14 +21,12 @@ type Block = record {
   gasUsed : nat;
   mixHash : text;
 };
-type EcdsaPublicKeyResponse = record { public_key : blob; chain_code : blob };
-type SignWithEcdsaResponse = record { signature : blob };
+type Result = variant { Ok : text; Err : text };
+type Result_1 = variant { Ok : nat64; Err : text };
 service : {
-  call_decrease_count : () -> (text);
-  call_increase_count : () -> (text);
+  call_decrease_count : () -> (Result);
+  call_increase_count : () -> (Result);
   get_canister_eth_address : () -> (text);
-  get_count : () -> (nat64);
-  get_ecdsa_public_key : () -> (EcdsaPublicKeyResponse);
+  get_count : () -> (Result_1);
   get_latest_ethereum_block : () -> (Block);
-  sign_hash_with_ecdsa : (blob) -> (SignWithEcdsaResponse);
 }
