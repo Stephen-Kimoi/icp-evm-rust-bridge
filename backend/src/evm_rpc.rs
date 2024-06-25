@@ -400,6 +400,21 @@ impl EvmRpcCanister {
         .await
     }
 
+    pub async fn eth_get_transaction_count(
+        services: RpcServices,
+        config: Option<RpcConfig>,
+        params: GetTransactionCountArgs,
+        cycles: u128,
+    ) -> CallResult<(MultiGetTransactionCountResult,)> {
+        ic_cdk::api::call::call_with_payment128(
+            CANISTER_ID,
+            "eth_getTransactionCount",
+            (services, config, params),
+            cycles,
+        )
+        .await
+    }
+
 } 
 
 impl Service {

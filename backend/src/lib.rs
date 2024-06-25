@@ -4,7 +4,7 @@ use eth_call::{ call_smart_contract, get_ecdsa_public_key };
 use ethers_core::{abi::Address, k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, utils::keccak256};
 use evm_rpc::{
     Block, BlockTag, EthMainnetService, EvmRpcCanister, GetBlockByNumberResult,
-    MultiGetBlockByNumberResult, RpcServices, EthSepoliaService
+    MultiGetBlockByNumberResult, RpcServices, EthSepoliaService, GetTransactionCountArgs, GetTransactionCountResult, MultiGetTransactionCountResult
 };
 use k256::Secp256k1;
 use ethers_core::types::{U64, U256};
@@ -95,31 +95,54 @@ fn get_abi() -> ethers_core::abi::Contract {
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
     let abi = get_abi();
-
-    // Get the canister's Ethereum address
     let canister_address = get_canister_eth_address().await;
-    
-    // Get the current nonce
     let nonce = get_nonce(&canister_address).await?;
+
+    ic_cdk::println!("Canister address: {}", canister_address);
+    ic_cdk::println!("Nonce: {:?}", nonce);
 
     let result = call_smart_contract(
         CONTRACT_ADDRESS.to_string(),
         &abi,
         "increaseCount",
         &[],
-        true, // This is a write operation
-        Some(U64::from(11155111)), // Chain ID for Sepolia testnet
+        true,
+        Some(U64::from(11155111)), // Sepolia chain ID
         Some(CONTRACT_ADDRESS.to_string()),
-        Some(U256::from(100000)), // Gas limit
-        Some(U256::from(0)), // Value (0 ETH)
-        Some(nonce), // Nonce included here
-        Some(U256::from(1_500_000_000u64)), // Max priority fee per gas (1.5 Gwei)
-        Some(U256::from(20_000_000_000u64)), // Max fee per gas (20 Gwei)
+        Some(U256::from(500000)), // Further increased gas limit
+        Some(U256::from(0)),
+        Some(nonce),
+        Some(U256::from(3_000_000_000u64)), // Further increased max priority fee
+        Some(U256::from(40_000_000_000u64)), // Further increased max fee
     )
-    .await?;
+    .await;
 
-    Ok("Increased count".to_string())
+    match result {
+        Ok(tx_hash) => {
+            ic_cdk::println!("Transaction sent successfully. Hash: {:?}", tx_hash);
+            Ok(format!("Increased count. Transaction hash: {:?}", tx_hash))
+        },
+        Err(e) => {
+            ic_cdk::println!("Error sending transaction: {:?}", e);
+            Err(format!("Failed to send transaction: {:?}", e))
+        }
+    }
 }
+
+// #[ic_cdk::update]
+// async fn call_increase_count_with_retry() -> Result<String, String> {
+//     for attempt in 0..3 {
+//         match call_increase_count().await {
+//             Ok(result) => return Ok(result),
+//             Err(e) if attempt < 2 => {
+//                 ic_cdk::println!("Attempt {} failed: {}. Retrying...", attempt + 1, e);
+//                 ic_cdk::timer::sleep(std::time::Duration::from_secs(5)).await;
+//             }
+//             Err(e) => return Err(e),
+//         }
+//     }
+//     Err("Max retries reached".to_string())
+// }
 
 #[ic_cdk::update]
 async fn get_count() -> Result<u64, String> {
@@ -154,7 +177,7 @@ async fn call_decrease_count() -> Result<String, String> {
     // Get the current nonce
     let nonce = get_nonce(&canister_address).await?;
 
-    let result = call_smart_contract(
+    call_smart_contract(
         CONTRACT_ADDRESS.to_string(),
         &abi,
         "decreaseCount",
@@ -164,7 +187,7 @@ async fn call_decrease_count() -> Result<String, String> {
         Some(CONTRACT_ADDRESS.to_string()),
         Some(U256::from(100000)), // Gas limit
         Some(U256::from(0)), // Value (0 ETH)
-        None, // Nonce (will be fetched automatically)
+        Some(nonce), // Nonce included here
         Some(U256::from(1_500_000_000u64)), // Max priority fee per gas (1.5 Gwei)
         Some(U256::from(20_000_000_000u64)), // Max fee per gas (20 Gwei)
     )
@@ -178,8 +201,19 @@ async fn get_nonce(address: &str) -> Result<U256, String> {
     let config = None;
     let cycles = 10_000_000_000;
 
-    match EvmRpcCanister::eth_get_transaction_count(rpc_services, config, address.to_string(), "latest".to_string(), cycles).await {
-        Ok((count,)) => Ok(count),
+    let params = GetTransactionCountArgs {
+        address: address.to_string(),
+        block: BlockTag::Latest,
+    };
+
+    match EvmRpcCanister::eth_get_transaction_count(rpc_services, config, params, cycles).await {
+        Ok((result,)) => match result {
+            MultiGetTransactionCountResult::Consistent(count_result) => match count_result {
+                GetTransactionCountResult::Ok(count) => Ok(U256::from(count)),
+                GetTransactionCountResult::Err(err) => Err(format!("RPC error: {:?}", err)),
+            },
+            MultiGetTransactionCountResult::Inconsistent(_) => Err("Inconsistent RPC results".to_string()),
+        },
         Err(e) => Err(format!("Failed to get nonce: {:?}", e)),
     }
 }

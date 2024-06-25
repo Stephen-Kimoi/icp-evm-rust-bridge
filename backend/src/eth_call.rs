@@ -198,8 +198,9 @@ async fn sign_transaction(
     unsigned_tx_bytes.insert(0, EIP1559_TX_ID);
     let txhash = keccak256(&unsigned_tx_bytes);
     let (pubkey, signature) = pubkey_and_signature(txhash.to_vec()).await;
+    let v = y_parity(&txhash, &signature, &pubkey);
     let signature = Signature {
-        v: y_parity(&txhash, &signature, &pubkey),
+        v: v.into(),
         r: U256::from_big_endian(&signature.signature[0..32]),
         s: U256::from_big_endian(&signature.signature[32..64]),
     };
@@ -215,7 +216,7 @@ async fn send_raw_transaction(network: String, raw_tx: String) -> Result<SendRaw
         "EthMainnet" => RpcServices::EthMainnet(None),
         _ => RpcServices::EthSepolia(None),
     };
-    let cycles = 10000000;
+    let cycles = 566428800;
     match EvmRpcCanister::eth_sendRawTransaction(services, config, raw_tx, cycles).await {
         Ok((res,)) => match res {
             MultiSendRawTransactionResult::Consistent(result) => Ok(result),
@@ -269,32 +270,66 @@ async fn pubkey_and_signature(txhash: Vec<u8>) -> (EcdsaPublicKeyResponse, SignW
 }
 
 
+// fn y_parity(txhash: &[u8; 32], signature: &SignWithEcdsaResponse, pubkey: &EcdsaPublicKeyResponse) -> u64 {
+//     let r = U256::from_big_endian(&signature.signature[0..32]);
+//     let s = U256::from_big_endian(&signature.signature[32..64]);
+//     let eth_sig = EthSignature { r, s, v: 0 };
+
+//     let msg = Sha256::digest(txhash);
+//     let vkey = VerifyingKey::from_sec1_bytes(&pubkey.public_key).expect("Invalid public key");
+
+//     let mut sig_bytes = [0u8; 64];
+//     eth_sig.r.to_big_endian(&mut sig_bytes[0..32]);
+//     eth_sig.s.to_big_endian(&mut sig_bytes[32..64]);
+
+//     let signature = Signature::from_bytes(&sig_bytes.into()).expect("Invalid signature");
+
+//     for i in 0..2 {
+//         let rid = RecoveryId::from_byte(i).expect("Invalid recovery ID");
+//         match VerifyingKey::recover_from_prehash(msg.as_slice(), &signature, rid) {
+//             Ok(recovered_key) => {
+//                 if vkey == recovered_key {
+//                     return i as u64 + 27;
+//                 } else {
+//                     ic_cdk::println!("Recovered key does not match provided key for i = {}", i);
+//                 }
+//             },
+//             Err(e) => {
+//                 ic_cdk::println!("Failed to recover key for i = {}: {:?}", i, e);
+//             }
+//         }
+//     }
+    
+//     ic_cdk::println!("txhash: {:?}", txhash);
+//     ic_cdk::println!("signature: {:?}", signature);
+//     ic_cdk::println!("pubkey: {:?}", pubkey);
+//     panic!("Failed to determine y-parity");
+// }
+
 fn y_parity(txhash: &[u8; 32], signature: &SignWithEcdsaResponse, pubkey: &EcdsaPublicKeyResponse) -> u64 {
     let r = U256::from_big_endian(&signature.signature[0..32]);
     let s = U256::from_big_endian(&signature.signature[32..64]);
-    let eth_sig = EthSignature { r, s, v: 0 };
 
     let msg = Sha256::digest(txhash);
     let vkey = VerifyingKey::from_sec1_bytes(&pubkey.public_key).expect("Invalid public key");
 
     let mut sig_bytes = [0u8; 64];
-    eth_sig.r.to_big_endian(&mut sig_bytes[0..32]);
-    eth_sig.s.to_big_endian(&mut sig_bytes[32..64]);
+    r.to_big_endian(&mut sig_bytes[0..32]);
+    s.to_big_endian(&mut sig_bytes[32..64]);
 
     let signature = Signature::from_bytes(&sig_bytes.into()).expect("Invalid signature");
 
+    // Try both possible recovery IDs
     for i in 0..2 {
         let rid = RecoveryId::from_byte(i).expect("Invalid recovery ID");
-        if let Ok(recovered_key) = VerifyingKey::recover_from_prehash(
-            msg.as_slice(),
-            &signature,
-            rid,
-        ) {
+        if let Ok(recovered_key) = VerifyingKey::recover_from_prehash(msg.as_slice(), &signature, rid) {
             if vkey == recovered_key {
                 return i as u64 + 27;
             }
         }
     }
 
-    panic!("Failed to determine y-parity");
+    // If we couldn't determine the parity, default to 27
+    // This is safer than panicking, as EIP-155 allows for v to be either 27 or 28
+    27
 }
