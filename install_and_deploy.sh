@@ -4,14 +4,11 @@
 
 # Create a new project
 echo "Creating a new project..."
-dfx new icp_evm_integration
-cd icp_evm_integration
 
 # Clone the template repository
 echo "Cloning template repository..."
-git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git temp
-cp -R temp/* .
-rm -rf temp
+git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git 
+cp -R icp-evm-rust-bridge/* .
 
 # Install dependencies
 echo "Installing dependencies..."

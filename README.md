@@ -63,7 +63,7 @@ A simple smart contract that implements a counter with functions to increase, de
 To get started with this template, run the following command:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/https://github.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
 ```
 
 This script will:
@@ -83,15 +83,3 @@ If you prefer to set up the project manually:
 2. Install dependencies with `npm install`
 3. Start a local replica with `dfx start --background`
 4. Deploy the canister with `dfx deploy`
-
-## Usage
-
-[Include instructions on how to use the template, call canister functions, etc.]
-
-## Contributing
-
-[Include instructions for contributing to the template]
-
-## License
-
-[Include license information]
