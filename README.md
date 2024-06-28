@@ -1,76 +1,97 @@
-# Vite + React + Rust + EVM RPC
+# ICP-EVM Integration Starter Template
 
-This template gives you everything you need to build a full-stack Web3 application on the [Internet Computer](https://internetcomputer.org/).
-It includes a frontend built with Vite and React, a backend written in Rust, and the EVM RPC canister to directly connect to Ethereum or other EVM-based blockchains.
+This template provides a seamless integration between Internet Computer Protocol (ICP) canisters and Ethereum Virtual Machine (EVM) based smart contracts. It uses Rust for the backend canister and includes a simple Solidity smart contract for demonstration.
 
-## Get started with one click:
-### In your browser:
+It has been built on top of the [evm rpc rust](https://github.com/fxgst/evm-rpc-rust/tree/main) template by [Elias Datler](https://github.com/fxgst)
 
-In Gitpod 
+## Project Structure
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/fxgst/evm-rpc-rust/)
-
-or GitHub Codespaces
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/fxgst/evm-rpc-rust/?quickstart=1)
-
-
-### Locally:
-
-Make sure you have you have Docker and VS Code installed and running, then click the button below
-
-[![Open locally in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/fxgst/evm-rpc-rust)
-
-### Or do the manual setup:
-
-Make sure that [Node.js](https://nodejs.org/en/) `>= 21` and [`dfx`](https://internetcomputer.org/docs/current/developer-docs/build/install-upgrade-remove) `>= 0.18` are installed on your system.
-
-Run the following commands in a new, empty project directory:
-
-```sh
-git clone https://github.com/fxgst/evm-rpc-rust.git # Download this starter project
-cd evm-rpc-rust # Navigate to the project directory
-dfx start --clean --background # Run dfx in the background
-npm install # Install project dependencies
-npm run setup # Install packages, deploy canisters, and generate type bindings
-
-npm start # Start the development server
+```
+/
+├── backend/
+│   └── src/
+│       ├── eth_call.rs
+│       ├── evm_rpc.rs
+│       └── lib.rs
+├── smart_contract/
+│   └── contracts/
+│       └── Counter.sol
+└── src/
+    └── (frontend files)
 ```
 
-## 🚀 Develop
+## Backend (Rust Canister)
 
-The frontend will update automatically as you save changes. 
-For the backend, run `dfx deploy backend` to redeploy.
-To redeploy all canisters (front- and backend), run `dfx deploy`.
+### eth_call.rs
 
-When ready, run `dfx deploy --network ic` to deploy your application to the ICP mainnet.
+This file contains the core functionality for interacting with EVM-based smart contracts.
 
-## 🛠️ Technology Stack
+Key components:
+- `call_smart_contract`: A function that handles both read and write operations to the smart contract.
+- `sign_transaction`: Handles the signing of transactions for write operations.
+- `send_raw_transaction`: Sends the signed transaction to the EVM network.
+- Helper functions for conversion between different data formats.
 
-- [Vite](https://vitejs.dev/): high-performance tooling for front-end web development
-- [React](https://reactjs.org/): a component-based UI library
-- [TypeScript](https://www.typescriptlang.org/): JavaScript extended with syntax for types
-- [Sass](https://sass-lang.com/): an extended syntax for CSS stylesheets
-- [Prettier](https://prettier.io/): code formatting for a wide range of supported languages
-- [Rust CDK](https://docs.rs/ic-cdk/): the Canister Development Kit for Rust
-- [EVM RPC canister](https://github.com/internet-computer-protocol/evm-rpc-canister): call Ethereum RPC methods from the Internet Computer
+### evm_rpc.rs
 
-## 📚 Documentation
+This file defines the structures and implementations for interacting with EVM RPC services.
 
-- [Internet Computer docs](https://internetcomputer.org/docs/current/developer-docs/ic-overview)
-- [Internet Computer wiki](https://wiki.internetcomputer.org/)
-- [Internet Computer forum](https://forum.dfinity.org/)
-- [Vite developer docs](https://vitejs.dev/guide/)
-- [React quick start guide](https://react.dev/learn)
-- [`dfx.json` reference schema](https://internetcomputer.org/docs/current/references/dfx-json-reference/)
-- [Rust developer docs](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [EVM RPC developer docs](https://internetcomputer.org/docs/current/developer-docs/integrations/ethereum/evm-rpc/)
-- [Developer Experience Feedback Board](https://dx.internetcomputer.org/)
+Key components:
+- Various structs and enums representing RPC requests and responses.
+- `EvmRpcCanister`: An implementation that provides methods for common Ethereum RPC calls.
+- `Service`: A struct that wraps the canister ID for making RPC calls.
 
+### lib.rs
 
-## 💡 Tips and Tricks
+This is the main entry point for the canister, containing the public functions that can be called.
 
-- If the links printed by dfx do not work in Codespaces, run `./canister_urls.py` and click the links shown there.
-- If you get an error `The wasm of 7hfb6-caaaa-aaaar-qadga-cai in pulled cache ...` run `rm -rf ~/.cache/dfinity/pulled/7hfb6-caaaa-aaaar-qadga-cai`
-- Customize your project's code style by editing the `.prettierrc` file and then running `npm run format`.
-- Split your frontend and backend console output by running `npm run frontend` and `npm run backend` in separate terminals.
+Key functions:
+- `get_latest_ethereum_block`: Retrieves the latest block from the Ethereum network.
+- `get_canister_eth_address`: Derives the Ethereum address for the canister.
+- `call_increase_count`: Increases the counter in the smart contract.
+- `get_count`: Retrieves the current count from the smart contract.
+- `call_decrease_count`: Decreases the counter in the smart contract.
+
+## Smart Contract (Solidity)
+
+### Counter.sol
+
+A simple smart contract that implements a counter with functions to increase, decrease, and get the current count.
+
+## Quick Start
+
+To get started with this template, run the following command:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/https://github.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
+```
+
+This script will:
+1. Create a new project
+2. Clone this template into the new project
+3. Install dependencies
+4. Start a local replica
+5. Deploy the canister
+
+After running the script, your project will be set up and ready to use!
+
+## Manual Setup
+
+If you prefer to set up the project manually:
+
+1. Clone this repository
+2. Install dependencies with `npm install`
+3. Start a local replica with `dfx start --background`
+4. Deploy the canister with `dfx deploy`
+
+## Usage
+
+[Include instructions on how to use the template, call canister functions, etc.]
+
+## Contributing
+
+[Include instructions for contributing to the template]
+
+## License
+
+[Include license information]
