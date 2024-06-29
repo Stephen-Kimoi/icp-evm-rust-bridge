@@ -4,6 +4,29 @@ This template provides a seamless integration between Internet Computer Protocol
 
 It has been built on top of the [evm rpc rust](https://github.com/fxgst/evm-rpc-rust/tree/main) template by [Elias Datler](https://github.com/fxgst)
 
+## Quick Start
+
+To get started with this template, run the following command:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
+```
+
+This script will:
+1. Create a new project
+2. Clone this template into the new project
+3. Install dependencies
+4. Start a local replica
+5. Deploy the canister
+
+After running the script, your project will be set up and ready to use!
+
+Once the canister is deployed this is what you'll see: 
+![alt text](image-1.png)
+
+You can click on the frontend link and this is what you'll see: 
+![alt text](image.png)
+
 ## Project Structure
 
 ```
@@ -58,38 +81,7 @@ Key functions:
 
 A simple smart contract that implements a counter with functions to increase, decrease, and get the current count. You can edit and add your smart contract code over here. 
 
-## Quick Start
-
-To get started with this template, run the following command:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
-```
-
-This script will:
-1. Create a new project
-2. Clone this template into the new project
-3. Install dependencies
-4. Start a local replica
-5. Deploy the canister
-
-After running the script, your project will be set up and ready to use!
-
-## Manual Setup
-
-If you prefer to set up the project manually:
-
-1. Clone this repository
-2. Install dependencies with `npm install`
-3. Start a local replica with `dfx start --background`
-4. Deploy the canister with `dfx deploy`
-
-## Usage 
-Once the canister is deployed this is what you'll see: 
-![alt text](image-1.png)
-
-You can click on the frontend link and this is what you'll see: 
-![alt text](image.png)
+## Usage
 
 ### Read Functionalities
 Cicking on ``Get Canister ETH Address`` button will generate the Ethereum address of the canister
