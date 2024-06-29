@@ -72,21 +72,17 @@ check_status
 styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
 echo
 
-# Deploy the backend canister
+# Deploy the canisters
 styled_echo $MAGENTA "🚀 Deploying the backend canister..."
-./did.sh && dfx deploy backend 
+./did.sh && dfx deploy 
 check_status
 styled_echo $GREEN "✅ Backend canister successfully deployed!"
 echo
 
-# Deploy the frontend canister
-styled_echo $MAGENTA "🚀 Deploying the frontend canister..."
-dfx deploy frontend
-check_status
-styled_echo $GREEN "✅ Frontend canister successfully deployed!"
-echo
-
 styled_echo $RED "🎉🎊 Congratulations! 🎊🎉"
-styled_echo $GREEN "Your ICP-EVM integration project is now ready to conquer the decentralized universe!"
+styled_echo $GREEN "Your ICP-EVM integration project is now ready!"
 echo
-styled_echo $YELLOW "May your code be bug-free and your transactions swift! Happy coding! 🖥️💻🚀"
+styled_echo $YELLOW "To get started, check out the official documentation:"
+styled_echo $CYAN "https://github.com/Stephen-Kimoi/icp-evm-rust-bridge#icp-evm-integration-starter-template"
+echo
+styled_echo $YELLOW "Happy coding! 🖥️💻🚀"
