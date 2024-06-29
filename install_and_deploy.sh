@@ -21,8 +21,7 @@ styled_echo() {
 # Function to check last command status
 check_status() {
     if [ $? -ne 0 ]; then
-        styled_echo $RED "❌ Last command failed. Exiting."
-        exit 1
+        styled_echo $RED "❌ Last command failed. Proceeding with the next command"
     fi
 }
 
@@ -40,7 +39,7 @@ styled_echo $MAGENTA "🏗️  Crafting your new project space..."
 echo
 
 # Clone the template repository
-styled_echo $BLUE "🧬 Cloning the magical template repository..."
+styled_echo $BLUE "🧬 Cloning the template repository..."
 git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git
 check_status
 styled_echo $GREEN "Repository cloned successfully."
