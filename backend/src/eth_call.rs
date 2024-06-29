@@ -238,7 +238,7 @@ fn from_hex(data: &str) -> Result<Vec<u8>, FromHexError> {
 fn key_id() -> EcdsaKeyId {
     EcdsaKeyId {
         curve: EcdsaCurve::Secp256k1,
-        name: "dfx_test_key".to_string(), // use EcdsaKeyId::default() for mainnet // use test_key_1 for testnet
+        name: "dfx_test_key".to_string(), // use EcdsaKeyId::default() for mainnet use test_key_1 for testnet
     }
 }
 

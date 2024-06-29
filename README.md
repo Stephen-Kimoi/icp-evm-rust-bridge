@@ -56,7 +56,7 @@ Key functions:
 
 ### Counter.sol
 
-A simple smart contract that implements a counter with functions to increase, decrease, and get the current count.
+A simple smart contract that implements a counter with functions to increase, decrease, and get the current count. You can edit and add your smart contract code over here. 
 
 ## Quick Start
 
@@ -83,3 +83,125 @@ If you prefer to set up the project manually:
 2. Install dependencies with `npm install`
 3. Start a local replica with `dfx start --background`
 4. Deploy the canister with `dfx deploy`
+
+## Usage 
+Once the canister is deployed this is what you'll see: 
+![alt text](image-1.png)
+
+You can click on the frontend link and this is what you'll see: 
+![alt text](image.png)
+
+### Read Functionalities
+Cicking on ``Get Canister ETH Address`` button will generate the Ethereum address of the canister
+
+Clicking on ``Get Count`` will return the count value
+
+### Write functionalities: 
+The buttons ``Increase Count`` and ``Decrease Count`` are responsible for performing write functionalities to the smart contract deployed on sepolia
+
+#### Note: The write functions can only work if you've deployed your canister to the mainnet, or you send test eth to the canister via the address that has been generated. The latter method isn't convenient since the address changes regularly for local deployments. 
+
+### Editing your code 
+To get started with editing your code, emsure you've changed the ``CONTRACT_ADDRESS`` and ``ABI_JSON`` in the ``lib.rs`` file inside the ``backend/src`` directory
+
+```
+// EDIT THESE SECTIONS
+const CONTRACT_ADDRESS: &str = "0xAed5d7b083ad30ad6B50f698427aD4907845AAc3";
+
+const ABI_JSON: &str = 
+```
+
+### Creating Read Functionalities
+
+To create a read functionality, you can use the following example as a template:
+
+```rust
+#[ic_cdk::update]
+async fn get_count() -> Result<u64, String> {
+    let abi = get_abi();
+    
+    let result = call_smart_contract(
+        CONTRACT_ADDRESS.to_string(), 
+        &abi, 
+        "getCount", 
+        &[], 
+        false, // This is a read operation
+        None, None, None, None, None, None, None // These parameters are not needed for read operations
+    ).await?;
+
+    let count_value = result
+        .get(0)
+        .ok_or("Expected a single value in the return value")?
+        .clone()
+        .into_uint()
+        .ok_or("Expected a uint256 value")?;
+
+    Ok(count_value.low_u64())
+}
+```
+
+This function works as follows:
+
+1. It uses `get_abi()` to retrieve the ABI of the smart contract.
+2. It calls `call_smart_contract` with the following parameters:
+   - `CONTRACT_ADDRESS`: The address of the deployed smart contract.
+   - `&abi`: The ABI of the contract.
+   - `"getCount"`: The name of the function to call in the smart contract.
+   - `&[]`: An empty array for function arguments (if any were needed).
+   - `false`: Indicates this is a read operation.
+   - `None` values: These are not needed for read operations.
+3. The result is then processed to extract the returned value.
+
+The `call_smart_contract` function from the `eth_call` module handles the interaction with the Ethereum network, including encoding the function call and decoding the result.
+
+### Creating Write Functionalities
+
+For write operations, you can use the following example:
+
+```rust
+#[ic_cdk::update]
+async fn call_increase_count() -> Result<String, String> {
+    let abi = get_abi();
+    let canister_address = get_canister_eth_address().await;
+    let nonce = get_nonce(&canister_address).await?;
+
+    let result = call_smart_contract(
+        CONTRACT_ADDRESS.to_string(),
+        &abi,
+        "increaseCount",
+        &[],
+        true, // This is a write operation
+        Some(U64::from(11155111)), // Sepolia chain ID
+        Some(CONTRACT_ADDRESS.to_string()),
+        Some(U256::from(500000)), // Gas limit
+        Some(U256::from(0)), // Value (0 ETH)
+        Some(nonce),
+        Some(U256::from(3_000_000_000u64)), // Max priority fee
+        Some(U256::from(40_000_000_000u64)), // Max fee
+    )
+    .await;
+
+    match result {
+        Ok(tx_hash) => Ok(format!("Increased count. Transaction hash: {:?}", tx_hash)),
+        Err(e) => Err(format!("Failed to send transaction: {:?}", e))
+    }
+}
+```
+
+This function works as follows:
+
+1. It retrieves the ABI and the canister's Ethereum address.
+2. It gets the current nonce for the canister's address.
+3. It calls `call_smart_contract` with parameters for a write operation:
+   - `true` indicates it's a write operation.
+   - It includes chain ID, gas limit, nonce, and gas pricing information.
+4. The function returns the transaction hash on success or an error message on failure.
+
+The `call_smart_contract` function handles the complexities of creating, signing, and sending the transaction to the Ethereum network.
+
+### Important Notes
+
+- Ensure you've updated the `CONTRACT_ADDRESS` and `ABI_JSON` in the `lib.rs` file to match your deployed smart contract.
+- Write operations require the canister to have ETH for gas fees. For local deployments, you may need to send test ETH to the canister's address.
+- The canister's Ethereum address may change in local deployments, so be aware of this when testing write functionalities.
+
