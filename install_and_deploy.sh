@@ -58,10 +58,18 @@ styled_echo $GREEN "✅ Dependencies successfully installed!"
 echo
 
 # Start the local replica
-styled_echo $YELLOW "🌐 Igniting the local replica..."
+styled_echo $YELLOW "🌐 Starting the local replica..."
 dfx start --background
 check_status
 styled_echo $GREEN "✅ Local replica is alive and kicking!"
+echo
+
+# Locally deploy the `evm_rpc` canister
+styled_echo $YELLOW "🚀 Pulling and deploying the evm_rpc canister locally..."
+dfx deps pull
+dfx deps init evm_rpc --argument '(record { nodesInSubnet = 28 })'
+check_status
+styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
 echo
 
 # Deploy the backend canister
