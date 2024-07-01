@@ -33,7 +33,7 @@ styled_echo $YELLOW "🚀 Launching your ICP-EVM starter kit 🚀"
 echo
 
 # Create a new project
-styled_echo $MAGENTA "🏗️  Crafting your new project space..."
+styled_echo $MAGENTA "🏗️  Creating your new project space..."
 echo
 
 # Clone the template repository
@@ -71,14 +71,14 @@ styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
 echo
 
 # Deploy the canisters
-styled_echo $MAGENTA "🚀 Deploying the backend canister..."
+styled_echo $MAGENTA "🚀 Deploying the backend and frontend canister..."
 ./did.sh && dfx deploy 
 check_status
-styled_echo $GREEN "✅ Backend canister successfully deployed!"
+styled_echo $GREEN "✅ All canisters successfully deployed!"
 echo
 
 styled_echo $RED "🎉🎊 Congratulations! 🎊🎉"
-styled_echo $GREEN "Your ICP-EVM integration project is now ready!"
+styled_echo $GREEN "Your ICP-EVM project template is now ready!"
 echo
 styled_echo $YELLOW "To get started, check out the official documentation:"
 styled_echo $CYAN "https://github.com/Stephen-Kimoi/icp-evm-rust-bridge#icp-evm-integration-starter-template"
