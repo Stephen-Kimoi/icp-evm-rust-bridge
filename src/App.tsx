@@ -49,12 +49,18 @@ function App() {
   const fetchCount = async () => {
     try {
       setLoading(true);
-      const count = await backend.get_count();
-      setCount(Number(count));
-      toast.success('Count fetched successfully!');
+      const result = await backend.get_count();
+      if ('Ok' in result) {
+        setCount(Number(result.Ok));
+        toast.success('Count fetched successfully!');
+      } else if ('Err' in result) {
+        throw new Error(result.Err);
+      } else {
+        throw new Error('Unexpected response format');
+      }
     } catch (err) {
       console.error(err);
-      toast.error('Failed to fetch the count.');
+      toast.error('Failed to fetch the count: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

@@ -105,7 +105,7 @@ const ABI_JSON: &str =
 
 ### Creating Read Functionalities
 
-To create a read functionality, you can use the following example inside ``lib.rs`` file as a template:
+To create a read functionality, you can use the following example as a template:
 
 ```rust
 #[ic_cdk::update]
