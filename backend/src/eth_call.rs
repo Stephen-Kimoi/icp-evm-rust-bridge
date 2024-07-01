@@ -1,4 +1,4 @@
-use ethers_core::{abi::{Contract, Token}, types::U64, utils::keccak256, types::Signature as EthSignature}; 
+use ethers_core::{abi::{Contract, Token}, types::U64, utils::keccak256 }; 
 use k256::ecdsa::{RecoveryId, VerifyingKey, Signature }; 
 // use ic_cdk::api::call::{call_with_payment, CallResult};
 use serde::{Deserialize, Serialize}; 
@@ -106,7 +106,7 @@ pub async fn call_smart_contract(
     
             // Handle the transaction status
             let tx_result = match tx_status {
-                SendRawTransactionResult::Ok(tx_hash) => {
+                SendRawTransactionResult::Ok(_tx_hash) => {
                     // Transaction was successful
                     // You can optionally return the transaction hash if needed
                     // Ok(vec![Token::String(tx_hash)])
