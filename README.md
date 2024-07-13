@@ -4,6 +4,10 @@ This template provides a seamless integration between Internet Computer Protocol
 
 It has been built on top of the [evm rpc rust](https://github.com/fxgst/evm-rpc-rust/tree/main) template by [Elias Datler](https://github.com/fxgst)
 
+Link to canister urls: 
+1. [Frontend](https://inuxd-qiaaa-aaaal-qjigq-cai.icp0.io/)
+2. [Backend](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=gr5at-6yaaa-aaaal-qjfiq-cai)
+3. [EVM rpc](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7hfb6-caaaa-aaaar-qadga-cai)
 ## Quick Start
 
 To get started with this template, run the following command:
