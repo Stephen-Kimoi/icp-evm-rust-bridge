@@ -1,13 +1,24 @@
-mod evm_rpc;
+// mod evm_rpc;
 mod eth_call;
+use candid::{Nat, Principal};
 use eth_call::{ call_smart_contract, get_ecdsa_public_key };
 use ethers_core::{abi::Address, k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, utils::keccak256};
-use evm_rpc::{
-    Block, BlockTag, EthMainnetService, EvmRpcCanister, GetBlockByNumberResult,
-    MultiGetBlockByNumberResult, RpcServices, EthSepoliaService, GetTransactionCountArgs, GetTransactionCountResult, MultiGetTransactionCountResult
+// use evm_rpc::{
+//     Block, BlockTag, EthMainnetService, EvmRpcCanister, GetBlockByNumberResult,
+//     MultiGetBlockByNumberResult, RpcServices, EthSepoliaService, GetTransactionCountArgs, GetTransactionCountResult, MultiGetTransactionCountResult
+// };
+use evm_rpc_canister_types::{
+    EvmRpcCanister, GetTransactionCountArgs, GetTransactionCountResult,
+    MultiGetTransactionCountResult, EthSepoliaService, MultiSendRawTransactionResult, RpcServices, SendRawTransactionResult, SendRawTransactionStatus, RpcService, RequestResult, RpcConfig, Block, 
+    EthMainnetService, MultiGetBlockByNumberResult, GetBlockByNumberResult
 };
 use k256::Secp256k1;
-use ethers_core::types::{U64, U256};
+use ethers_core::types::U256;
+use evm_rpc_canister_types::BlockTag;
+
+pub const EVM_RPC_CANISTER_ID: Principal =
+    Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
+pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
 
 #[ic_cdk::update]
 async fn get_latest_ethereum_block() -> Block {
@@ -15,7 +26,13 @@ async fn get_latest_ethereum_block() -> Block {
 
     let cycles = 10_000_000_000;
     let (result,) =
-        EvmRpcCanister::eth_get_block_by_number(rpc_providers, None, BlockTag::Latest, cycles)
+        EvmRpcCanister::eth_get_block_by_number(
+            &EVM_RPC,
+            rpc_providers, 
+            None, 
+            BlockTag::Latest, 
+            cycles
+        )
             .await
             .expect("Call failed");
 
@@ -30,8 +47,9 @@ async fn get_latest_ethereum_block() -> Block {
     }
 }
 
+// Generating an ethereum address for the canister
 #[ic_cdk::update] 
-async fn get_canister_eth_address() -> String {
+pub async fn get_canister_eth_address() -> String {
     let res = get_ecdsa_public_key().await; 
     let pubkey = res.public_key; 
 
@@ -98,22 +116,13 @@ async fn call_increase_count() -> Result<String, String> {
     let canister_address = get_canister_eth_address().await;
     let nonce = get_nonce(&canister_address).await?;
 
-    ic_cdk::println!("Canister address: {}", canister_address);
-    ic_cdk::println!("Nonce: {:?}", nonce);
-
     let result = call_smart_contract(
-        CONTRACT_ADDRESS.to_string(),
+        CONTRACT_ADDRESS.to_string(), 
         &abi,
         "increaseCount",
         &[],
         true,
-        Some(U64::from(11155111)), // Sepolia chain ID
-        Some(CONTRACT_ADDRESS.to_string()),
-        Some(U256::from(500000)), // Further increased gas limit
-        Some(U256::from(0)),
-        Some(nonce),
-        Some(U256::from(3_000_000_000u64)), // Further increased max priority fee
-        Some(U256::from(40_000_000_000u64)), // Further increased max fee
+        Some(U256::from(11155111)), // Sepolia chain ID as U256
     )
     .await;
 
@@ -154,7 +163,7 @@ async fn get_count() -> Result<u64, String> {
         "getCount", 
         &[], 
         false, // This is a read operation
-        None, None, None, None, None, None, None // These parameters are not needed for read operations
+        None, // Chain ID
     ).await?;
 
     let count_value = result
@@ -171,25 +180,13 @@ async fn get_count() -> Result<u64, String> {
 async fn call_decrease_count() -> Result<String, String> {
     let abi = get_abi();
 
-    // Get the canister's Ethereum address
-    let canister_address = get_canister_eth_address().await;
-    
-    // Get the current nonce
-    let nonce = get_nonce(&canister_address).await?;
-
     call_smart_contract(
         CONTRACT_ADDRESS.to_string(),
         &abi,
         "decreaseCount",
         &[],
         true, // This is a write operation
-        Some(U64::from(11155111)), // Chain ID for Sepolia testnet
-        Some(CONTRACT_ADDRESS.to_string()),
-        Some(U256::from(100000)), // Gas limit
-        Some(U256::from(0)), // Value (0 ETH)
-        Some(nonce), // Nonce included here
-        Some(U256::from(1_500_000_000u64)), // Max priority fee per gas (1.5 Gwei)
-        Some(U256::from(20_000_000_000u64)), // Max fee per gas (20 Gwei)
+        None
     )
     .await?;
 
@@ -198,24 +195,41 @@ async fn call_decrease_count() -> Result<String, String> {
 
 async fn get_nonce(address: &str) -> Result<U256, String> {
     let rpc_services = RpcServices::EthSepolia(Some(vec![EthSepoliaService::Alchemy]));
-    let config = None;
-    let cycles = 10_000_000_000;
 
     let params = GetTransactionCountArgs {
         address: address.to_string(),
         block: BlockTag::Latest,
     };
 
-    match EvmRpcCanister::eth_get_transaction_count(rpc_services, config, params, cycles).await {
-        Ok((result,)) => match result {
-            MultiGetTransactionCountResult::Consistent(count_result) => match count_result {
-                GetTransactionCountResult::Ok(count) => Ok(U256::from(count)),
-                GetTransactionCountResult::Err(err) => Err(format!("RPC error: {:?}", err)),
-            },
-            MultiGetTransactionCountResult::Inconsistent(_) => Err("Inconsistent RPC results".to_string()),
+    let (result,) = EVM_RPC
+      .eth_get_transaction_count(
+        rpc_services, 
+        None, 
+        params.clone(),  
+        2_000_000_000_u128
+    ).await 
+    .unwrap_or_else(|e| {
+        panic!(
+            "failed to get transaction count for {:?}, error: {:?}",
+            params, e
+        )
+    });
+
+    match result {
+        MultiGetTransactionCountResult::Consistent(count_result) => match count_result {
+            GetTransactionCountResult::Ok(count) => Ok(nat_to_u256(&count)),
+            GetTransactionCountResult::Err(error) => {
+                Err(format!("failed to get transaction count for {:?}, error: {:?}", params, error))
+            }
         },
-        Err(e) => Err(format!("Failed to get nonce: {:?}", e)),
+        MultiGetTransactionCountResult::Inconsistent(_) => Err("Inconsistent RPC results".to_string()),
     }
+}
+
+// Helper function to convert Nat to U256
+fn nat_to_u256(n: &Nat) -> U256 {
+    let be_bytes = n.0.to_bytes_be();
+    U256::from_big_endian(&be_bytes)
 }
 
 ic_cdk::export_candid!();  

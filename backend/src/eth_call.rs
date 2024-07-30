@@ -1,18 +1,30 @@
-use ethers_core::{abi::{Contract, Token}, types::U64, utils::keccak256 }; 
-use k256::ecdsa::{RecoveryId, VerifyingKey, Signature }; 
-// use ic_cdk::api::call::{call_with_payment, CallResult};
-use serde::{Deserialize, Serialize}; 
-use crate::evm_rpc::{
-    EthSepoliaService, EvmRpcCanister, MultiSendRawTransactionResult, RequestResult, RpcService, RpcServices,
-    EVM_RPC, SendRawTransactionResult
-}; 
-use hex::FromHexError; 
-use ethers_core::types::{U256, Bytes}; 
+use ethers_core::{abi::{Contract, Token}, types::{U64, U256, Bytes, H160, transaction::eip1559::Eip1559TransactionRequest, Signature as EthSignature}, utils::keccak256};
+// use k256::ecdsa::{RecoveryId, VerifyingKey, Signature};
+use serde::{Deserialize, Serialize};
+// use crate::{evm_rpc::{
+//     BlockTag, EthSepoliaService, GetTransactionCountResult, MultiSendRawTransactionResult, RequestResult, RpcService, RpcServices, SendRawTransactionResult, SendRawTransactionStatus, EVM_RPC
+// }, get_canister_eth_address};
+use evm_rpc_canister_types::{
+    EvmRpcCanister, GetTransactionCountArgs, GetTransactionCountResult,
+    MultiGetTransactionCountResult, EthSepoliaService, MultiSendRawTransactionResult, RpcServices, SendRawTransactionResult, SendRawTransactionStatus, RpcService, RequestResult, RpcConfig
+};
+use hex::FromHexError;
 use ic_cdk::api::management_canister::ecdsa::{
     EcdsaPublicKeyResponse, EcdsaPublicKeyArgument, ecdsa_public_key, EcdsaCurve, EcdsaKeyId, sign_with_ecdsa, SignWithEcdsaResponse, 
     SignWithEcdsaArgument
-}; 
+};
+use ic_cdk::api::call::{CallResult, call_with_payment}; 
 use sha2::{Sha256, Digest};
+use std::str::FromStr;
+use candid::{Nat, Principal}; 
+// use crate::MultiGetTransactionCountResult;
+// use crate::evm_rpc::RpcConfig;
+use crate::get_canister_eth_address; 
+use evm_rpc_canister_types::BlockTag;
+
+pub const EVM_RPC_CANISTER_ID: Principal =
+    Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
+pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EthCallParams {
@@ -40,19 +52,19 @@ pub struct JsonRpcError {
     message: String,
 }
 
+// const CHAIN_ID: u128 = 1337;
+const CHAIN_ID: u128 = 11155111; // Sepolia
+const GAS: u128 = 300_000;
+const MAX_FEE_PER_GAS: u128 = 156_083_066_522_u128;
+const MAX_PRIORITY_FEE_PER_GAS: u128 = 3_000_000_000;
+
 pub async fn call_smart_contract(
     contract_address: String,
     abi: &Contract,
     function_name: &str,
     args: &[Token],
     is_write_operation: bool,
-    chain_id: Option<U64>,
-    to: Option<String>,
-    gas: Option<U256>,
     value: Option<U256>,
-    nonce: Option<U256>,
-    max_priority_fee_per_gas: Option<U256>,
-    max_fee_per_gas: Option<U256>,
 ) -> Result<Vec<Token>, String> {
 
     let f = match abi.functions_by_name(function_name).map(|v| &v[..]) {
@@ -75,120 +87,117 @@ pub async fn call_smart_contract(
         .encode_input(args)
         .expect("Error while encoding input args");
 
+    if is_write_operation {
+        let value = value.unwrap_or_default();
 
-        if is_write_operation {
-            // Handle write operations (send transaction)
-            // let caller = ic_cdk::caller();
-            let chain_id = chain_id.ok_or("Chain ID is required")?;
-            let to = to.ok_or("Destination address is required")?;
-            let gas = gas.ok_or("Gas limit is required")?;
-            let value = value.unwrap_or_default();
-            let nonce = nonce.ok_or("Nonce is required")?;
-            let max_priority_fee_per_gas = max_priority_fee_per_gas.ok_or("Max priority fee per gas is required")?;
-            let max_fee_per_gas = max_fee_per_gas.ok_or("Max fee per gas is required")?;
-    
-            // Sign the transaction
-            let signed_tx = sign_transaction(
-                chain_id,
-                to,
-                gas,
-                value,
-                nonce,
-                max_priority_fee_per_gas,
-                max_fee_per_gas,
-                data.to_vec(),
-            )
-            .await?;
-    
-            // Send the signed raw transaction
-            let network = "EthSepolia".to_string();
-            let tx_status = send_raw_transaction(network, signed_tx).await?;
-    
-            // Handle the transaction status
-            let tx_result = match tx_status {
-                SendRawTransactionResult::Ok(_tx_hash) => {
-                    // Transaction was successful
-                    // You can optionally return the transaction hash if needed
-                    // Ok(vec![Token::String(tx_hash)])
-                    Ok(Vec::new())
+        let signed_tx = sign_transaction(
+            U64::from(CHAIN_ID as u64),
+            contract_address,
+            U256::from(GAS),
+            value,
+            next_id().await, 
+            U256::from(MAX_PRIORITY_FEE_PER_GAS),
+            U256::from(MAX_FEE_PER_GAS),
+            data.to_vec(),
+        )
+        .await?;
+
+        let result = EVM_RPC
+            .eth_send_raw_transaction(
+                RpcServices::EthSepolia(Some(vec![
+                    EthSepoliaService::PublicNode,
+                    EthSepoliaService::BlockPi,
+                    EthSepoliaService::Ankr,
+                ])),
+                None::<evm_rpc_canister_types::RpcConfig>,
+                signed_tx.clone(),
+                10_000_000_000,
+            ).await 
+            .map_err(|e| format!("Failed to call eth_sendRawTransaction: {:?}", e))?;
+
+            match result {
+                (MultiSendRawTransactionResult::Consistent(send_result),) => {
+                    match send_result {
+                        SendRawTransactionResult::Ok(tx_status) => {
+                            // Convert SendRawTransactionStatus to String
+                            Ok(vec![Token::String(format!("{:?}", tx_status))])
+                        },
+                        SendRawTransactionResult::Err(err) => Err(format!("Transaction failed: {:?}", err)),
+                    }
                 }
-                SendRawTransactionResult::Err(err) => {
-                    Err(format!("Transaction failed: {:?}", err))
+                (MultiSendRawTransactionResult::Inconsistent(results),) => {
+                    let errors: Vec<String> = results
+                        .into_iter()
+                        .map(|(service, send_result)| match send_result {
+                            SendRawTransactionResult::Ok(tx_status) => format!("Success with status: {:?}", tx_status),
+                            SendRawTransactionResult::Err(err) => format!("Service {:?} failed: {:?}", service, err),
+                        })
+                        .collect();
+                    Err(format!("Inconsistent results: {:?}", errors))
                 }
-            };
-
-            return tx_result;
-
-
-        } else {
-            let json_rpc_payload = serde_json::to_string(&JsonRpcRequest {
-                id: 1,
-                jsonrpc: "2.0".to_string(),
-                method: "eth_call".to_string(),
-                params: (
-                    EthCallParams {
-                        to: contract_address,
-                        data: to_hex(&data),
-                    },
-                    "latest".to_string(),
-                ),
-            })
-            .expect("Error while encoding JSON-RPC request");
-
-            let rpc_provider = RpcService::EthSepolia(EthSepoliaService::BlockPi); 
-            let max_response_bytes = 2048;
-            let cycles = 10_000_000_000; 
-
-            let res = match EVM_RPC
-                .request(rpc_provider, json_rpc_payload, max_response_bytes, cycles)
-                .await
-            {
-                Ok((res,)) => res,
-                Err(e) => ic_cdk::trap(format!("Error: {:?}", e).as_str()),
-            };
-             
-            match res {
-                RequestResult::Ok(ok) => {
-                    let json: JsonRpcResult =
-                        serde_json::from_str(&ok).expect("JSON was not well-formatted");
-                    let result = from_hex(&json.result.expect("Unexpected JSON response")).unwrap();
-                    Ok(f.decode_output(&result).expect("Error decoding output"))
-                }
-                RequestResult::Err(err) => Err(format!("Response error: {err:?}")),
             }
 
+    } else {
+        let json_rpc_payload = serde_json::to_string(&JsonRpcRequest {
+            id: 1,
+            jsonrpc: "2.0".to_string(),
+            method: "eth_call".to_string(),
+            params: (
+                EthCallParams {
+                    to: contract_address,
+                    data: to_hex(&data),
+                },
+                "latest".to_string(),
+            ),
+        })
+        .expect("Error while encoding JSON-RPC request");
+
+        let rpc_provider = RpcService::EthSepolia(EthSepoliaService::BlockPi); 
+        let max_response_bytes = 2048;
+        let cycles = 10_000_000_000; // Increase the cycles here
+
+        let res = match EVM_RPC
+            .request(rpc_provider, json_rpc_payload, max_response_bytes, cycles)
+            .await
+        {
+            Ok((res,)) => res,
+            Err(e) => ic_cdk::trap(format!("Error: {:?}", e).as_str()),
+        };
+         
+        match res {
+            RequestResult::Ok(ok) => {
+                let json: JsonRpcResult =
+                    serde_json::from_str(&ok).expect("JSON was not well-formatted");
+                let result = from_hex(&json.result.expect("Unexpected JSON response")).unwrap();
+                Ok(f.decode_output(&result).expect("Error decoding output"))
+            }
+            RequestResult::Err(err) => Err(format!("Response error: {err:?}")),
         }
+
+    }
 }
+
 
 async fn sign_transaction(
     chain_id: U64,
     to: String,
     gas: U256,
     value: U256,
-    nonce: U256,
+    nonce: Nat,
     max_priority_fee_per_gas: U256,
     max_fee_per_gas: U256,
     data: Vec<u8>,
 ) -> Result<String, String> {
-    use ethers_core::types::transaction::eip1559::Eip1559TransactionRequest;
-    use ethers_core::types::Signature;
-    use ethers_core::types::H160;
-    use std::str::FromStr;
     const EIP1559_TX_ID: u8 = 2;
 
-    let data = Some(Bytes::from(data));
     let tx = Eip1559TransactionRequest {
         chain_id: Some(chain_id),
         from: None,
-        to: Some(
-            H160::from_str(&to)
-                .map_err(|err| format!("Failed to parse the destination address: {}", err))?
-                .into(),
-        ),
+        to: Some(H160::from_str(&to).map_err(|e| format!("Invalid 'to' address: {}", e))?.into()),
         gas: Some(gas),
-        value: Some(value),
-        nonce: Some(nonce),
-        data,
+        value: Some(value), 
+        nonce: Some(nat_to_u256(&nonce)),
+        data: Some(Bytes::from(data)),
         access_list: Default::default(),
         max_priority_fee_per_gas: Some(max_priority_fee_per_gas),
         max_fee_per_gas: Some(max_fee_per_gas),
@@ -196,35 +205,40 @@ async fn sign_transaction(
 
     let mut unsigned_tx_bytes = tx.rlp().to_vec();
     unsigned_tx_bytes.insert(0, EIP1559_TX_ID);
+
     let txhash = keccak256(&unsigned_tx_bytes);
+
     let (pubkey, signature) = pubkey_and_signature(txhash.to_vec()).await;
-    let v = y_parity(&txhash, &signature, &pubkey);
-    let signature = Signature {
-        v: v.into(),
+
+    let y_parity = y_parity(&txhash, &signature.signature, &pubkey.public_key);
+    let signature = ethers_core::types::Signature {
         r: U256::from_big_endian(&signature.signature[0..32]),
         s: U256::from_big_endian(&signature.signature[32..64]),
+        v: y_parity as u64,
     };
+
     let mut signed_tx_bytes = tx.rlp_signed(&signature).to_vec();
     signed_tx_bytes.insert(0, EIP1559_TX_ID);
+
     Ok(format!("0x{}", hex::encode(&signed_tx_bytes)))
 }
 
-async fn send_raw_transaction(network: String, raw_tx: String) -> Result<SendRawTransactionResult, String> {
-    let config = None;
-    let services = match network.as_str() {
-        "EthSepolia" => RpcServices::EthSepolia(Some(vec![EthSepoliaService::Alchemy])),
-        "EthMainnet" => RpcServices::EthMainnet(None),
-        _ => RpcServices::EthSepolia(None),
-    };
-    let cycles = 566428800;
-    match EvmRpcCanister::eth_sendRawTransaction(services, config, raw_tx, cycles).await {
-        Ok((res,)) => match res {
-            MultiSendRawTransactionResult::Consistent(result) => Ok(result),
-            MultiSendRawTransactionResult::Inconsistent(_) => Err("Status is inconsistent".to_string()),
-        },
-        Err(e) => Err(format!("Error: {:?}", e)),
-    }
-}
+// async fn send_raw_transaction(network: String, raw_tx: String) -> Result<SendRawTransactionResult, String> {
+//     let config = None;
+//     let services = match network.as_str() {
+//         "EthSepolia" => RpcServices::EthSepolia(Some(vec![EthSepoliaService::Alchemy])),
+//         "EthMainnet" => RpcServices::EthMainnet(None),
+//         _ => RpcServices::EthSepolia(None),
+//     };
+//     let cycles = 566428800;
+//     match EvmRpcCanister::eth_sendRawTransaction(services, config, raw_tx, cycles).await {
+//         Ok((res,)) => match res {
+//             MultiSendRawTransactionResult::Consistent(result) => Ok(result),
+//             MultiSendRawTransactionResult::Inconsistent(_) => Err("Status is inconsistent".to_string()),
+//         },
+//         Err(e) => Err(format!("Error: {:?}", e)),
+//     }
+// }
 
 // HELPER FUNCTIONS
 fn to_hex(data: &[u8]) -> String {
@@ -242,6 +256,12 @@ fn key_id() -> EcdsaKeyId {
     }
 }
 
+fn nat_to_u256(n: &Nat) -> U256 {
+    let be_bytes = n.0.to_bytes_be();
+    U256::from_big_endian(&be_bytes)
+}
+
+// Getting ECDSA public key associated to your canister
 pub async fn get_ecdsa_public_key() -> EcdsaPublicKeyResponse {
     let (pub_key,) = ecdsa_public_key(EcdsaPublicKeyArgument {
         key_id: key_id(),
@@ -270,66 +290,47 @@ async fn pubkey_and_signature(txhash: Vec<u8>) -> (EcdsaPublicKeyResponse, SignW
 }
 
 
-// fn y_parity(txhash: &[u8; 32], signature: &SignWithEcdsaResponse, pubkey: &EcdsaPublicKeyResponse) -> u64 {
-//     let r = U256::from_big_endian(&signature.signature[0..32]);
-//     let s = U256::from_big_endian(&signature.signature[32..64]);
-//     let eth_sig = EthSignature { r, s, v: 0 };
+fn y_parity(prehash: &[u8], sig: &[u8], pubkey: &[u8]) -> u64 {
+    use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 
-//     let msg = Sha256::digest(txhash);
-//     let vkey = VerifyingKey::from_sec1_bytes(&pubkey.public_key).expect("Invalid public key");
-
-//     let mut sig_bytes = [0u8; 64];
-//     eth_sig.r.to_big_endian(&mut sig_bytes[0..32]);
-//     eth_sig.s.to_big_endian(&mut sig_bytes[32..64]);
-
-//     let signature = Signature::from_bytes(&sig_bytes.into()).expect("Invalid signature");
-
-//     for i in 0..2 {
-//         let rid = RecoveryId::from_byte(i).expect("Invalid recovery ID");
-//         match VerifyingKey::recover_from_prehash(msg.as_slice(), &signature, rid) {
-//             Ok(recovered_key) => {
-//                 if vkey == recovered_key {
-//                     return i as u64 + 27;
-//                 } else {
-//                     ic_cdk::println!("Recovered key does not match provided key for i = {}", i);
-//                 }
-//             },
-//             Err(e) => {
-//                 ic_cdk::println!("Failed to recover key for i = {}: {:?}", i, e);
-//             }
-//         }
-//     }
-    
-//     ic_cdk::println!("txhash: {:?}", txhash);
-//     ic_cdk::println!("signature: {:?}", signature);
-//     ic_cdk::println!("pubkey: {:?}", pubkey);
-//     panic!("Failed to determine y-parity");
-// }
-
-fn y_parity(txhash: &[u8; 32], signature: &SignWithEcdsaResponse, pubkey: &EcdsaPublicKeyResponse) -> u64 {
-    let r = U256::from_big_endian(&signature.signature[0..32]);
-    let s = U256::from_big_endian(&signature.signature[32..64]);
-
-    let msg = Sha256::digest(txhash);
-    let vkey = VerifyingKey::from_sec1_bytes(&pubkey.public_key).expect("Invalid public key");
-
-    let mut sig_bytes = [0u8; 64];
-    r.to_big_endian(&mut sig_bytes[0..32]);
-    s.to_big_endian(&mut sig_bytes[32..64]);
-
-    let signature = Signature::from_bytes(&sig_bytes.into()).expect("Invalid signature");
-
-    // Try both possible recovery IDs
-    for i in 0..2 {
-        let rid = RecoveryId::from_byte(i).expect("Invalid recovery ID");
-        if let Ok(recovered_key) = VerifyingKey::recover_from_prehash(msg.as_slice(), &signature, rid) {
-            if vkey == recovered_key {
-                return i as u64 + 27;
-            }
+    let orig_key = VerifyingKey::from_sec1_bytes(pubkey).expect("failed to parse the pubkey");
+    let signature = Signature::try_from(sig).unwrap();
+    for parity in [0u8, 1] {
+        let recid = RecoveryId::try_from(parity).unwrap();
+        let recovered_key = VerifyingKey::recover_from_prehash(prehash, &signature, recid)
+            .expect("failed to recover key");
+        if recovered_key == orig_key {
+            return parity as u64;
         }
     }
 
-    // If we couldn't determine the parity, default to 27
-    // This is safer than panicking, as EIP-155 allows for v to be either 27 or 28
-    27
+    panic!(
+        "failed to recover the parity bit from a signature; sig: {}, pubkey: {}",
+        hex::encode(sig),
+        hex::encode(pubkey)
+    )
+}
+
+async fn next_id() -> Nat {
+    let res: CallResult<(MultiGetTransactionCountResult,)> = call_with_payment(
+        EVM_RPC.0, // Principal
+        "eth_getTransactionCount", // Method name
+        (
+            RpcServices::EthSepolia(Some(vec![EthSepoliaService::BlockPi])),
+            None::<RpcConfig>,
+            crate::GetTransactionCountArgs {
+                address: get_canister_eth_address().await, 
+                block: BlockTag::Latest, // Correct BlockTag type
+            },
+            2_000_000_000, // Cycles
+        ),
+        2_000_000_000, // Cycles
+    )
+    .await;
+
+    match res {
+        Ok((MultiGetTransactionCountResult::Consistent(GetTransactionCountResult::Ok(id)),)) => id.into(),
+        Ok((inconsistent,)) => ic_cdk::trap(&format!("Inconsistent: {:?}", inconsistent)), // Use {:?} for Debug formatting
+        Err(err) => ic_cdk::trap(&format!("{:?}", err)),
+    }
 }

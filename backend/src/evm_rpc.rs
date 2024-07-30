@@ -14,7 +14,7 @@ pub enum Auth {
     Manage,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum EthSepoliaService {
     Alchemy,
     BlockPi,
@@ -22,19 +22,19 @@ pub enum EthSepoliaService {
     Ankr,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub struct HttpHeader {
     pub value: String,
     pub name: String,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub struct RpcApi {
     pub url: String,
     pub headers: Option<Vec<HttpHeader>>,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum EthMainnetService {
     Alchemy,
     BlockPi,
@@ -142,7 +142,7 @@ pub enum FeeHistoryResult {
     Err(RpcError),
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum RpcService {
     EthSepolia(EthSepoliaService),
     Custom(RpcApi),
@@ -233,13 +233,13 @@ pub struct GetTransactionCountArgs {
     pub block: BlockTag,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum GetTransactionCountResult {
     Ok(u128),
     Err(RpcError),
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum MultiGetTransactionCountResult {
     Consistent(GetTransactionCountResult),
     Inconsistent(Vec<(RpcService, GetTransactionCountResult)>),
@@ -274,7 +274,7 @@ pub enum MultiGetTransactionReceiptResult {
     Inconsistent(Vec<(RpcService, GetTransactionReceiptResult)>),
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum SendRawTransactionStatus {
     Ok(String),
     Err(String),
@@ -283,13 +283,13 @@ pub enum SendRawTransactionStatus {
     // InsufficientFunds,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum SendRawTransactionResult {
     Ok(SendRawTransactionStatus),
     Err(RpcError),
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Debug)]
 pub enum MultiSendRawTransactionResult {
     Consistent(SendRawTransactionResult),
     Inconsistent(Vec<(RpcService, SendRawTransactionResult)>),
@@ -400,7 +400,7 @@ impl EvmRpcCanister {
         .await
     }
 
-    pub async fn eth_get_transaction_count(
+    pub async fn eth_getTransactionCount(
         services: RpcServices,
         config: Option<RpcConfig>,
         params: GetTransactionCountArgs,

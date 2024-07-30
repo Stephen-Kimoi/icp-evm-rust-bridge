@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 candid = "0.10"
 ethers-core = "2.0.14"
+evm-rpc-canister-types = "1.0.0"
 generic-array = "1.0.0"
 getrandom = { version = "0.2", features = ["custom"] } 
 hex = "0.4.3"
