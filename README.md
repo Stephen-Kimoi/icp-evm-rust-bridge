@@ -7,7 +7,6 @@ It has been built on top of the [evm rpc rust](https://github.com/fxgst/evm-rpc-
 Link to canister urls: 
 1. [Frontend](https://inuxd-qiaaa-aaaal-qjigq-cai.icp0.io/)
 2. [Backend](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=gr5at-6yaaa-aaaal-qjfiq-cai)
-3. [EVM rpc](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7hfb6-caaaa-aaaar-qadga-cai)
 ## Quick Start
 
 To get started with this template, run the following command:
@@ -38,7 +37,6 @@ You can click on the frontend link and this is what you'll see:
 ├── backend/
 │   └── src/
 │       ├── eth_call.rs
-│       ├── evm_rpc.rs
 │       └── lib.rs
 ├── smart_contract/
 │   └── contracts/
@@ -58,15 +56,6 @@ Key components:
 - `sign_transaction`: Handles the signing of transactions for write operations.
 - `send_raw_transaction`: Sends the signed transaction to the EVM network.
 - Helper functions for conversion between different data formats.
-
-### evm_rpc.rs
-
-This file defines the structures and implementations for interacting with EVM RPC services.
-
-Key components:
-- Various structs and enums representing RPC requests and responses.
-- `EvmRpcCanister`: An implementation that provides methods for common Ethereum RPC calls.
-- `Service`: A struct that wraps the canister ID for making RPC calls.
 
 ### lib.rs
 

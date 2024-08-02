@@ -1,12 +1,8 @@
-use ethers_core::{abi::{Contract, Token}, types::{U64, U256, Bytes, H160, transaction::eip1559::Eip1559TransactionRequest, Signature as EthSignature}, utils::keccak256};
-// use k256::ecdsa::{RecoveryId, VerifyingKey, Signature};
+use ethers_core::{abi::{Contract, Token}, types::{U64, U256, Bytes, H160, transaction::eip1559::Eip1559TransactionRequest }, utils::keccak256};
 use serde::{Deserialize, Serialize};
-// use crate::{evm_rpc::{
-//     BlockTag, EthSepoliaService, GetTransactionCountResult, MultiSendRawTransactionResult, RequestResult, RpcService, RpcServices, SendRawTransactionResult, SendRawTransactionStatus, EVM_RPC
-// }, get_canister_eth_address};
 use evm_rpc_canister_types::{
-    EvmRpcCanister, GetTransactionCountArgs, GetTransactionCountResult,
-    MultiGetTransactionCountResult, EthSepoliaService, MultiSendRawTransactionResult, RpcServices, SendRawTransactionResult, SendRawTransactionStatus, RpcService, RequestResult, RpcConfig
+    EvmRpcCanister, GetTransactionCountResult,
+    MultiGetTransactionCountResult, EthSepoliaService, MultiSendRawTransactionResult, RpcServices, SendRawTransactionResult, RpcService, RequestResult, RpcConfig
 };
 use hex::FromHexError;
 use ic_cdk::api::management_canister::ecdsa::{
@@ -14,11 +10,8 @@ use ic_cdk::api::management_canister::ecdsa::{
     SignWithEcdsaArgument
 };
 use ic_cdk::api::call::{CallResult, call_with_payment}; 
-use sha2::{Sha256, Digest};
 use std::str::FromStr;
 use candid::{Nat, Principal}; 
-// use crate::MultiGetTransactionCountResult;
-// use crate::evm_rpc::RpcConfig;
 use crate::get_canister_eth_address; 
 use evm_rpc_canister_types::BlockTag;
 
@@ -223,22 +216,6 @@ async fn sign_transaction(
     Ok(format!("0x{}", hex::encode(&signed_tx_bytes)))
 }
 
-// async fn send_raw_transaction(network: String, raw_tx: String) -> Result<SendRawTransactionResult, String> {
-//     let config = None;
-//     let services = match network.as_str() {
-//         "EthSepolia" => RpcServices::EthSepolia(Some(vec![EthSepoliaService::Alchemy])),
-//         "EthMainnet" => RpcServices::EthMainnet(None),
-//         _ => RpcServices::EthSepolia(None),
-//     };
-//     let cycles = 566428800;
-//     match EvmRpcCanister::eth_sendRawTransaction(services, config, raw_tx, cycles).await {
-//         Ok((res,)) => match res {
-//             MultiSendRawTransactionResult::Consistent(result) => Ok(result),
-//             MultiSendRawTransactionResult::Inconsistent(_) => Err("Status is inconsistent".to_string()),
-//         },
-//         Err(e) => Err(format!("Error: {:?}", e)),
-//     }
-// }
 
 // HELPER FUNCTIONS
 fn to_hex(data: &[u8]) -> String {
