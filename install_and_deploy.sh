@@ -64,8 +64,7 @@ echo
 
 # Locally deploy the `evm_rpc` canister
 styled_echo $YELLOW "🚀 Pulling and deploying the evm_rpc canister locally..."
-dfx deps pull
-dfx deps init evm_rpc --argument '(record { nodesInSubnet = 28 })'
+dfx deploy evm_rpc
 check_status
 styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
 echo
