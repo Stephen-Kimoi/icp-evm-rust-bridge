@@ -54,6 +54,7 @@ cd $PROJECT_NAME
 # Clone the template repository into the specified project name directory
 styled_echo $BLUE "🧬 Creating the template into $PROJECT_NAME..."
 git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git ./$PROJECT_NAME
+cd ./$PROJECT_NAME
 check_status
 styled_echo $GREEN "Template created succesfully into $PROJECT_NAME."
 
@@ -82,11 +83,11 @@ styled_echo $GREEN "✅ Local replica is alive and kicking!"
 echo
 
 # Locally deploy the `evm_rpc` canister
-# styled_echo $YELLOW "🚀 Deploying the evm_rpc canister locally..."
-# dfx deploy evm_rpc
-# check_status
-# styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
-# echo
+styled_echo $YELLOW "🚀 Deploying the evm_rpc canister locally..."
+dfx deploy evm_rpc
+check_status
+styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
+echo
 
 # Deploy the canisters
 styled_echo $MAGENTA "🚀 Deploying the backend canister..."
