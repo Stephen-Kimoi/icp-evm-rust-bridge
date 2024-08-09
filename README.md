@@ -13,7 +13,7 @@ Link to canister urls:
 To get started with this template, run the following command:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)" "my_project_name"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)" -- project-name
 ```
 
 This script will:
