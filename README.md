@@ -12,9 +12,9 @@ Link to canister urls:
 
 To get started with this template, run the following command:
 
-
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
-
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)" "my_project_name"
+```
 
 This script will:
 1. Create a new project
@@ -33,7 +33,7 @@ You can click on the frontend link and this is what you'll see:
 
 ## Project Structure
 
-
+```
 /
 ├── backend/
 │   └── src/
@@ -44,7 +44,7 @@ You can click on the frontend link and this is what you'll see:
 │       └── Counter.sol
 └── src/
     └── (frontend files)
-
+```
 
 ## Backend (Rust Canister)
 
@@ -92,16 +92,18 @@ To get started with editing your code, emsure you've changed the ``CONTRACT_ADDR
 
 
 // EDIT THESE SECTIONS
+```rust
 const CONTRACT_ADDRESS: &str = "0xAed5d7b083ad30ad6B50f698427aD4907845AAc3";
 
 const ABI_JSON: &str = 
+```
 
 
 ### Creating Read Functionalities
 
 To create a read functionality, you can use the following example as a template:
 
-
+```rust
 #[ic_cdk::update]
 async fn get_count() -> Result<u64, String> {
     let abi = get_abi();
@@ -124,7 +126,7 @@ async fn get_count() -> Result<u64, String> {
 
     Ok(count_value.low_u64())
 }
-
+```
 
 This function works as follows:
 
@@ -144,7 +146,7 @@ The `call_smart_contract` function from the `eth_call` module handles the intera
 
 For write operations, you can use the following example:
 
-
+```rust
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
     let abi = get_abi();
@@ -172,7 +174,7 @@ async fn call_increase_count() -> Result<String, String> {
         Err(e) => Err(format!("Failed to send transaction: {:?}", e))
     }
 }
-
+```
 
 This function works as follows:
 

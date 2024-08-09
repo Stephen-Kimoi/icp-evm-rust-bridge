@@ -23,29 +23,51 @@ check_status() {
     fi
 }
 
+# Check if a project name was provided
+if [ -z "$1" ]; then
+    styled_echo $RED "❌ No project name provided. Please provide a project name."
+    exit 1
+fi
+
+PROJECT_NAME=$1
+
 # ASCII Art
 echo "
-${CYAN}░▀█▀░█▀▀░█▀█░░░░░█▀▀░█░█░█▄█░░░█▀▄░█▀▄░▀█▀░█▀▄░█▀▀░█▀▀
-░░█░░█░░░█▀█░░░░░█▀▀░▀▄▀░█░█░░░█▀▄░█▀▄░░█░░█░█░█░█░█▀▀
-░░▀░░▀▀▀░▀░▀░▀▀▀░▀▀▀░░▀░░▀░▀░░░▀▀░░▀░▀░░▀░░▀▀░░▀▀▀░▀▀▀${RESET}"
+${CYAN}
+██╗ ██████╗██████╗     ███████╗██╗   ██╗███╗   ███╗    ██████╗ ██████╗ ██╗██████╗  ██████╗ ███████╗
+██║██╔════╝██╔══██╗    ██╔════╝██║   ██║████╗ ████║    ██╔══██╗██╔══██╗██║██╔══██╗██╔═══██╗██╔════╝
+██║██║     ██████╔╝    ███████╗██║   ██║██╔████╔██║    ██║  ██║██████╔╝██║██║  ██║██║   ██║███████╗
+██║██║     ██╔══██╗    ╚════██║██║   ██║██║╚██╔╝██║    ██║  ██║██╔══██╗██║██║  ██║██║   ██║╚════██║
+██║╚██████╗██║  ██║    ███████║╚██████╔╝██║ ╚═╝ ██║    ██████╔╝██║  ██║██║██████╔╝╚██████╔╝███████║
+╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝ ╚═════╝ ╚═╝     ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝╚═════╝  ╚═════╝ ╚══════╝
+${RESET}"
 
 styled_echo $YELLOW "🚀 Launching your ICP-EVM starter kit 🚀"
 echo
 
-# Create a new project
+# Create a new project directory
 styled_echo $MAGENTA "🏗️  Crafting your new project space..."
-echo
-
-# Clone the template repository
-styled_echo $BLUE "🧬 Cloning the template repository..."
-git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git
+mkdir $PROJECT_NAME
 check_status
-styled_echo $GREEN "Repository cloned successfully."
+cd $PROJECT_NAME
 
-styled_echo $BLUE "Copying files from cloned repository..."
-cp -R icp-evm-rust-bridge/* .
+# Clone the template repository into the specified project name directory
+styled_echo $BLUE "🧬 Cloning the template repository into $PROJECT_NAME..."
+git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git .
 check_status
-styled_echo $GREEN "✅ Template successfully cloned and files copied!"
+styled_echo $GREEN "Repository cloned successfully into $PROJECT_NAME."
+
+# Remove the .git directory to remove commit history and remote connection
+styled_echo $RED "🗑️ Removing .git directory to clean up commit history and remove remote connection..."
+rm -rf .git
+check_status
+styled_echo $GREEN "✅ Commit history and remote repository removed!"
+
+# Initialize a new Git repository
+styled_echo $BLUE "🔧 Initializing a new Git repository..."
+git init
+check_status
+styled_echo $GREEN "✅ New Git repository initialized! Start fresh with your commits."
 echo
 
 # Install dependencies
