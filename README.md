@@ -7,13 +7,14 @@ It has been built on top of the [evm rpc rust](https://github.com/fxgst/evm-rpc-
 Link to canister urls: 
 1. [Frontend](https://inuxd-qiaaa-aaaal-qjigq-cai.icp0.io/)
 2. [Backend](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=gr5at-6yaaa-aaaal-qjfiq-cai)
+
 ## Quick Start
 
 To get started with this template, run the following command:
 
-```bash
+
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Stephen-Kimoi/icp-evm-rust-bridge/main/install_and_deploy.sh)"
-```
+
 
 This script will:
 1. Create a new project
@@ -32,7 +33,7 @@ You can click on the frontend link and this is what you'll see:
 
 ## Project Structure
 
-```
+
 /
 ├── backend/
 │   └── src/
@@ -43,7 +44,7 @@ You can click on the frontend link and this is what you'll see:
 │       └── Counter.sol
 └── src/
     └── (frontend files)
-```
+
 
 ## Backend (Rust Canister)
 
@@ -89,18 +90,18 @@ The buttons ``Increase Count`` and ``Decrease Count`` are responsible for perfor
 ### Editing your code 
 To get started with editing your code, emsure you've changed the ``CONTRACT_ADDRESS`` and ``ABI_JSON`` in the ``lib.rs`` file inside the ``backend/src`` directory
 
-```
+
 // EDIT THESE SECTIONS
 const CONTRACT_ADDRESS: &str = "0xAed5d7b083ad30ad6B50f698427aD4907845AAc3";
 
 const ABI_JSON: &str = 
-```
+
 
 ### Creating Read Functionalities
 
 To create a read functionality, you can use the following example as a template:
 
-```rust
+
 #[ic_cdk::update]
 async fn get_count() -> Result<u64, String> {
     let abi = get_abi();
@@ -123,7 +124,7 @@ async fn get_count() -> Result<u64, String> {
 
     Ok(count_value.low_u64())
 }
-```
+
 
 This function works as follows:
 
@@ -143,7 +144,7 @@ The `call_smart_contract` function from the `eth_call` module handles the intera
 
 For write operations, you can use the following example:
 
-```rust
+
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
     let abi = get_abi();
@@ -171,7 +172,7 @@ async fn call_increase_count() -> Result<String, String> {
         Err(e) => Err(format!("Failed to send transaction: {:?}", e))
     }
 }
-```
+
 
 This function works as follows:
 
@@ -190,3 +191,16 @@ The `call_smart_contract` function handles the complexities of creating, signing
 - Write operations require the canister to have ETH for gas fees. For local deployments, you may need to send test ETH to the canister's address.
 - The canister's Ethereum address may change in local deployments, so be aware of this when testing write functionalities.
 
+## Upcoming Features
+
+We are continuously working to improve this template and add new features. Some of the features that are currently in development and will be implemented soon include:
+
+1. Enhanced error handling and logging for better debugging.
+2. Support for more complex smart contract interactions, including handling of structs and arrays.
+3. Integration with multiple EVM-compatible networks.
+4. Improved gas estimation for more efficient transactions.
+5. A user-friendly interface for deploying and managing smart contracts directly from the canister.
+6. Support for event listening and webhook notifications for smart contract events.
+7. Integration with popular Ethereum development tools like Hardhat and Truffle.
+
+Stay tuned for these exciting updates that will make your ICP-EVM integration even more powerful and flexible!
