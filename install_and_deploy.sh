@@ -52,16 +52,13 @@ check_status
 cd $PROJECT_NAME
 
 # Clone the template repository into the specified project name directory
-styled_echo $BLUE "🧬 Cloning the template repository into $PROJECT_NAME..."
-git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git .
+styled_echo $BLUE "🧬 Creating the template into $PROJECT_NAME..."
+git clone https://github.com/Stephen-Kimoi/icp-evm-rust-bridge.git ./$PROJECT_NAME
 check_status
-styled_echo $GREEN "Repository cloned successfully into $PROJECT_NAME."
+styled_echo $GREEN "Template created succesfully into $PROJECT_NAME."
 
 # Remove the .git directory to remove commit history and remote connection
-styled_echo $RED "🗑️ Removing .git directory to clean up commit history and remove remote connection..."
 rm -rf .git
-check_status
-styled_echo $GREEN "✅ Commit history and remote repository removed!"
 
 # Initialize a new Git repository
 styled_echo $BLUE "🔧 Initializing a new Git repository..."
