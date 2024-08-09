@@ -85,7 +85,7 @@ styled_echo $GREEN "✅ Local replica is alive and kicking!"
 echo
 
 # Locally deploy the `evm_rpc` canister
-styled_echo $YELLOW "🚀 Pulling and deploying the evm_rpc canister locally..."
+styled_echo $YELLOW "🚀 Deploying the evm_rpc canister locally..."
 dfx deploy evm_rpc
 check_status
 styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
