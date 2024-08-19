@@ -84,7 +84,7 @@ echo
 
 # Locally deploy the `evm_rpc` canister
 styled_echo $YELLOW "🚀 Deploying all canisters..."
-dfx deploy
+dfx deps pull && dfx deps deploy && dfx deploy
 check_status
 styled_echo $GREEN "✅ All canisters deployed locally..."
 echo
