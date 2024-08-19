@@ -3,8 +3,7 @@
     "evm_rpc": {
       "type": "pull",
       "id": "7hfb6-caaaa-aaaar-qadga-cai",
-      "specified_id": "7hfb6-caaaa-aaaar-qadga-cai",
-      "init_arg": "(record { nodesInSubnet = 28 })"
+      "specified_id": "7hfb6-caaaa-aaaar-qadga-cai"
     },
     "backend": {
       "dependencies": ["evm_rpc"],
