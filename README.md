@@ -1,7 +1,3 @@
-Here's an updated version of your documentation, with a focus on the functionalities inside the `eth_call.rs` file:
-
----
-
 # ICP-EVM Integration Starter Template
 
 This template provides a seamless integration between Internet Computer Protocol (ICP) canisters and Ethereum Virtual Machine (EVM) based smart contracts. It uses Rust for the backend canister and includes a simple Solidity smart contract for demonstration.
@@ -211,7 +207,3 @@ We are continuously working to improve this template and add new features. Some 
 7. Integration with popular Ethereum development tools like Hardhat and Truffle.
 
 Stay tuned for these exciting updates that will make your ICP-EVM integration even more powerful and flexible!
-
---- 
-
-This updated documentation provides a clearer understanding of the functionalities within the `eth_call.rs` file and how they integrate with the rest of the project.
