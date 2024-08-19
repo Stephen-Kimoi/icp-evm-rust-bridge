@@ -83,17 +83,10 @@ styled_echo $GREEN "✅ Local replica is alive and kicking!"
 echo
 
 # Locally deploy the `evm_rpc` canister
-styled_echo $YELLOW "🚀 Deploying the evm_rpc canister locally..."
-dfx deploy evm_rpc
+styled_echo $YELLOW "🚀 Deploying all canisters..."
+dfx deploy
 check_status
-styled_echo $GREEN "✅ EVM RPC canister deployed locally..."
-echo
-
-# Deploy the canisters
-styled_echo $MAGENTA "🚀 Deploying the backend canister..."
-./did.sh && dfx deploy 
-check_status
-styled_echo $GREEN "✅ Backend canister successfully deployed!"
+styled_echo $GREEN "✅ All canisters deployed locally..."
 echo
 
 styled_echo $RED "🎉🎊 Congratulations! 🎊🎉"
