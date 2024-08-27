@@ -1,7 +1,8 @@
-// mod evm_rpc;
 mod eth_call;
+mod store_transactions;
 use candid::Principal;
 use eth_call::{ call_smart_contract, get_ecdsa_public_key };
+use store_transactions::{store_transaction_hash, get_transaction_hashes}; 
 use ethers_core::{abi::Address, k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, types::U256, utils::keccak256};
 use evm_rpc_canister_types::{
     EvmRpcCanister, GetTransactionCountArgs, 
@@ -108,8 +109,6 @@ fn get_abi() -> ethers_core::abi::Contract {
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
     let abi = get_abi();
-    // let canister_address = get_canister_eth_address().await;
-    // let nonce = get_nonce(&canister_address).await?;
 
     let result = call_smart_contract(
         CONTRACT_ADDRESS.to_string(), 
@@ -122,9 +121,25 @@ async fn call_increase_count() -> Result<String, String> {
     .await;
 
     match result {
-        Ok(tx_hash) => {
-            ic_cdk::println!("Transaction sent successfully. Hash: {:?}", tx_hash);
-            Ok(format!("Increased count. Transaction hash: {:?}", tx_hash))
+        Ok(tx_hash_tokens) => {
+            // Convert Vec<Token> to String
+            let tx_hash = tx_hash_tokens
+                .get(0)
+                .ok_or("Expected a single value in the return value")?
+                .clone()
+                .into_string()
+                .ok_or("Expected a string value")?;
+
+            // Extract the actual hash from the string
+            let tx_hash_cleaned = tx_hash
+                .trim_start_matches("Ok(Some(\"")
+                .trim_end_matches("\"))");
+
+            ic_cdk::println!("Transaction sent successfully. Hash: {:?}", tx_hash_cleaned);
+
+            // Store the transaction hash
+            store_transaction_hash(tx_hash_cleaned.to_string());
+            Ok(format!("Increased count. Transaction hash: {:?}", tx_hash_cleaned))
         },
         Err(e) => {
             ic_cdk::println!("Error sending transaction: {:?}", e);
@@ -172,5 +187,10 @@ async fn call_decrease_count() -> Result<String, String> {
 
     Ok("Decreased count".to_string())
 } 
+
+#[ic_cdk::update]
+async fn get_stored_transaction_hashes() -> Vec<String> {
+    get_transaction_hashes()
+}
 
 ic_cdk::export_candid!();  

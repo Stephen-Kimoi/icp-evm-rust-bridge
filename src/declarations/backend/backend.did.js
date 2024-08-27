@@ -30,6 +30,8 @@ export const idlFactory = ({ IDL }) => {
     'get_canister_eth_address' : IDL.Func([], [IDL.Text], []),
     'get_count' : IDL.Func([], [Result_1], []),
     'get_latest_ethereum_block' : IDL.Func([], [Block], []),
+    'get_stored_transaction_hashes' : IDL.Func([], [IDL.Vec(IDL.Text)], []),
+    'store_transaction_hash' : IDL.Func([IDL.Text], [], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

@@ -29,4 +29,6 @@ service : {
   get_canister_eth_address : () -> (text);
   get_count : () -> (Result_1);
   get_latest_ethereum_block : () -> (Block);
+  get_stored_transaction_hashes : () -> (vec text);
+  store_transaction_hash : (text) -> ();
 }

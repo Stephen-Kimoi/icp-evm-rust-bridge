@@ -31,6 +31,13 @@ Once the canister is deployed, this is what you'll see:
 You can click on the frontend link and this is what you'll see: 
 ![alt text](image.png)
 
+## Usage
+When you click on ``Get Canister ETH Address`` Button it will display the ETH Address of the backend canister
+
+You need to take the ETH Address generated and send some Sepolia ETH to it for your canister to perform write functionality (``increase count`` & ``decrease count``)
+
+Performing read functionality ``Get Count`` doesn't require you to have Sepolia ETH in your canister.  
+
 ## Project Structure
 
 ```
@@ -45,6 +52,17 @@ You can click on the frontend link and this is what you'll see:
 └── src/
     └── (frontend files)
 ```
+
+### Note: dfx test keys
+On line 232 of ``eth_call.rs`` file: 
+```rust
+    name: "test_key_1".to_string(), // use EcdsaKeyId::default() for mainnet use test_key_1 for testnet and dfx_test_key for local deployment
+```
+
+Ensure you use the correct key for your deployment i.e 
+- test_key_1 for testnet
+- dfx_test_key for local deployment 
+- EcdsaKeyId::default() for mainnet deployment
 
 ## Backend (Rust Canister)
 

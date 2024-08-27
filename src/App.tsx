@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.scss';
 import rustLogo from './assets/rust.svg';
 import reactLogo from './assets/react.svg';
@@ -17,20 +17,7 @@ function App() {
   const [block, setBlock] = useState<Block | undefined>();
   const [canisterEthAddress, setCanisterEthAddress] = useState<string | undefined>();
   const [count, setCount] = useState<number | undefined>();
-
-  const fetchBlock = async () => {
-    try {
-      setLoading(true);
-      const block = await backend.get_latest_ethereum_block();
-      setBlock(block);
-      toast.success('Latest Ethereum block fetched successfully!');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to fetch the latest Ethereum block.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
 
   const fetchCanisterEthAddress = async () => {
     try {
@@ -93,6 +80,21 @@ function App() {
       setLoading(false);
     }
   };
+
+  const fetchTransactionHashes = async () => {
+    try {
+      const hashes = await backend.get_stored_transaction_hashes();
+      console.log("Hashes are: ", hashes); 
+      setTransactionHashes(hashes);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch transaction hashes.');
+    } 
+  };
+
+  useEffect(() => {
+    fetchTransactionHashes(); 
+  })
 
   return (
     <div className="App">
@@ -168,6 +170,25 @@ function App() {
             <h3>Count:</h3>
             <p>{count}</p>
           </pre>
+        )}
+
+        {transactionHashes.length > 0 && (
+          <div className="transaction-hashes">
+            <h3>Transaction Hashes:</h3>
+            <ul>
+              {transactionHashes.map((hash, index) => (
+                <li key={index}>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {hash}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 

@@ -35,6 +35,8 @@ export interface _SERVICE {
   'get_canister_eth_address' : ActorMethod<[], string>,
   'get_count' : ActorMethod<[], Result_1>,
   'get_latest_ethereum_block' : ActorMethod<[], Block>,
+  'get_stored_transaction_hashes' : ActorMethod<[], Array<string>>,
+  'store_transaction_hash' : ActorMethod<[string], undefined>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: ({ IDL }: { IDL: IDL }) => IDL.Type[];
