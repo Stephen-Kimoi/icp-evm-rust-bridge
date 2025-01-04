@@ -1,16 +1,23 @@
-mod eth_call;
 mod store_transactions;
 use candid::Principal;
-use eth_call::{ call_smart_contract, get_ecdsa_public_key };
+// use eth_call::{ call_smart_contract, get_ecdsa_public_key };
 use store_transactions::{store_transaction_hash, get_transaction_hashes}; 
-use ethers_core::{abi::Address, k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, types::U256, utils::keccak256};
+// use ethers_core::{k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, types::U256, utils::keccak256};
 use evm_rpc_canister_types::{
-    EvmRpcCanister, GetTransactionCountArgs, 
+    EvmRpcCanister, 
     RpcServices, Block, 
     EthMainnetService, MultiGetBlockByNumberResult, GetBlockByNumberResult
 };
-use k256::Secp256k1;
+// use k256::Secp256k1;
 use evm_rpc_canister_types::BlockTag;
+use alloy::{
+    network::Network, providers::{Provider, ProviderBuilder}, signers::icp::IcpSigner, transports::icp::{IcpConfig, RpcApi, RpcService}
+};
+use alloy::signers::Signer;
+// use ethers_core::types::TransactionRequest;
+// use alloy_rpc_types_eth::TransactionRequest;
+use alloy::network::Ethereum;
+// use alloy::network::TransactionBuilder;
 
 pub const EVM_RPC_CANISTER_ID: Principal =
     Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
@@ -42,24 +49,6 @@ async fn get_latest_ethereum_block() -> Block {
         }
     }
 }
-
-// Generating an ethereum address for the canister
-#[ic_cdk::update] 
-pub async fn get_canister_eth_address() -> String {
-    let res = get_ecdsa_public_key().await; 
-    let pubkey = res.public_key; 
-
-    let key: PublicKey<Secp256k1> = PublicKey::from_sec1_bytes(&pubkey)
-        .expect("Failed to pass the public key as SEC1"); 
-    let point = key.to_encoded_point(false); 
-    let point_bytes = point.as_bytes(); 
-    assert_eq!(point_bytes[0], 0x04); 
-    let hash = keccak256(&point_bytes[1..]); 
-    let self_address = ethers_core::utils::to_checksum(&Address::from_slice(&hash[12..32]), None); 
-
-    self_address
-}
-
 
 // FUNCTIONS FOR CALLING THE SMART CONTRACT
 const CONTRACT_ADDRESS: &str = "0xAed5d7b083ad30ad6B50f698427aD4907845AAc3";
@@ -106,87 +95,105 @@ fn get_abi() -> ethers_core::abi::Contract {
         .expect("Failed to parse ABI")
 }
 
+fn get_rpc_service() -> RpcService {
+    RpcService::Custom(RpcApi {
+        url: "https://ic-alloy-evm-rpc-proxy.kristofer-977.workers.dev/eth-sepolia".to_string(),
+        headers: None,
+    })
+}
+
+async fn create_icp_signer() -> IcpSigner {
+    let key_name = "dfx_test_key".to_string(); // For local testing
+    IcpSigner::new(vec![], &key_name, None).await.unwrap()
+}
+
+#[ic_cdk::update]
+async fn get_canister_eth_address() -> String {
+    let signer = create_icp_signer().await;
+    signer.address().to_string()
+}
+
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
+    // let signer = create_icp_signer().await;
+    let config = IcpConfig::new(get_rpc_service());
+    let provider = ProviderBuilder::new().on_icp(config);
     let abi = get_abi();
 
-    let result = call_smart_contract(
-        CONTRACT_ADDRESS.to_string(), 
-        &abi,
-        "increaseCount",
-        &[],
-        true,
-        Some(U256::from(11155111)), // Sepolia chain ID as U256
-    )
-    .await;
+    let tx = <Ethereum as Network>::TransactionRequest::default()
+    .to(CONTRACT_ADDRESS.parse().unwrap())
+    .input(abi.function("increaseCount")
+        .unwrap()
+        .encode_input(&[])
+        .unwrap()
+        .into());
+
+    let result = provider.send_transaction(tx).await;
 
     match result {
-        Ok(tx_hash_tokens) => {
-            // Convert Vec<Token> to String
-            let tx_hash = tx_hash_tokens
-                .get(0)
-                .ok_or("Expected a single value in the return value")?
-                .clone()
-                .into_string()
-                .ok_or("Expected a string value")?;
-
-            // Extract the actual hash from the string
-            let tx_hash_cleaned = tx_hash
-                .trim_start_matches("Ok(Some(\"")
-                .trim_end_matches("\"))");
-
-            ic_cdk::println!("Transaction sent successfully. Hash: {:?}", tx_hash_cleaned);
-
-            // Store the transaction hash
-            store_transaction_hash(tx_hash_cleaned.to_string());
-            Ok(format!("Increased count. Transaction hash: {:?}", tx_hash_cleaned))
+        Ok(pending_tx) => {
+            let hash = pending_tx.tx_hash().to_string();
+            store_transaction_hash(hash.clone());
+            Ok(format!("Increased count. Transaction hash: {}", hash))
         },
-        Err(e) => {
-            ic_cdk::println!("Error sending transaction: {:?}", e);
-            Err(format!("Failed to send transaction: {:?}", e))
-        }
+        Err(e) => Err(format!("Failed to increase count: {:?}", e))
     }
 }
 
 #[ic_cdk::update]
 async fn get_count() -> Result<u64, String> {
+    let config = IcpConfig::new(get_rpc_service());
+    let provider = ProviderBuilder::new().on_icp(config);
     let abi = get_abi();
-    
-    let result = call_smart_contract(
-        CONTRACT_ADDRESS.to_string(), 
-        &abi, 
-        "getCount", 
-        &[], 
-        false, // This is a read operation
-        None, // Chain ID
-    ).await?;
 
-    let count_value = result
-        .get(0)
-        .ok_or("Expected a single value in the return value")?
-        .clone()
-        .into_uint()
-        .ok_or("Expected a uint256 value")?;
+    let result = provider.call(
+        &<Ethereum as Network>::TransactionRequest::default()
+            .to(CONTRACT_ADDRESS.parse().unwrap())
+            .input(abi.function("getCount")
+                .unwrap()
+                .encode_input(&[])
+                .unwrap()
+                .into())
+    ).await;    
 
-    Ok(count_value.low_u64())
+    match result {
+        Ok(output) => {
+            let decoded = abi.function("getCount")
+                .unwrap()
+                .decode_output(&output)
+                .unwrap();
+            Ok(decoded[0].clone().into_uint().unwrap().low_u64())
+        },
+        Err(e) => Err(format!("Failed to get count: {:?}", e))
+    }
 }
 
 #[ic_cdk::update]
 async fn call_decrease_count() -> Result<String, String> {
+    // let signer = create_icp_signer().await;
+    let config = IcpConfig::new(get_rpc_service());
+    let provider = ProviderBuilder::new().on_icp(config);
     let abi = get_abi();
 
-    call_smart_contract(
-        CONTRACT_ADDRESS.to_string(),
-        &abi,
-        "decreaseCount",
-        &[],
-        true, // This is a write operation
-        None
-    )
-    .await?;
+    let tx = <Ethereum as Network>::TransactionRequest::default()
+    .to(CONTRACT_ADDRESS.parse().unwrap())
+    .input(abi.function("decreaseCount")
+        .unwrap()
+        .encode_input(&[])
+        .unwrap()
+        .into());
 
-    Ok("Decreased count".to_string())
-} 
+    let result = provider.send_transaction(tx).await;
+
+    match result {
+        Ok(pending_tx) => {
+            let hash = pending_tx.tx_hash().to_string();
+            store_transaction_hash(hash.clone());
+            Ok(format!("Decreased count. Transaction hash: {}", hash))
+        },
+        Err(e) => Err(format!("Failed to decrease count: {:?}", e))
+    }
+}
 
 #[ic_cdk::update]
 async fn get_stored_transaction_hashes() -> Vec<String> {

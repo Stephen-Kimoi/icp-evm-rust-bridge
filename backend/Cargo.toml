@@ -22,3 +22,12 @@ serde = "1.0.197"
 serde_bytes = "0.11.14"
 serde_json = "1.0.116"
 sha2 = "0.10.8"
+alloy = { git = "https://github.com/ic-alloy/ic-alloy.git", tag = "v0.3.5-icp.1", default-features = false, features = [
+  "icp",
+  "sol-types",
+  "json",
+  "contract",
+] }
+alloy-primitives = "0.8.18"
+tower = "0.5.1"
+alloy-rpc-types-eth = "0.9.2"
