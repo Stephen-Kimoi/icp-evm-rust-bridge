@@ -145,6 +145,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
+ "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -854,6 +855,7 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "alloy-primitives",
+ "alloy-rlp",
  "alloy-rpc-types-eth 0.9.2",
  "candid",
  "ethers-core",

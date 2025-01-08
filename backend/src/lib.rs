@@ -1,52 +1,52 @@
 mod store_transactions;
 use candid::Principal;
+// use ic_cdk::api::management_canister::ecdsa::EcdsaKeyId;
 // use eth_call::{ call_smart_contract, get_ecdsa_public_key };
 use store_transactions::{store_transaction_hash, get_transaction_hashes}; 
 // use ethers_core::{k256::elliptic_curve::{sec1::ToEncodedPoint, PublicKey}, types::U256, utils::keccak256};
-use evm_rpc_canister_types::{
-    EvmRpcCanister, 
-    RpcServices, Block, 
-    EthMainnetService, MultiGetBlockByNumberResult, GetBlockByNumberResult
-};
+use evm_rpc_canister_types::EvmRpcCanister;
 // use k256::Secp256k1;
-use evm_rpc_canister_types::BlockTag;
 use alloy::{
-    network::Network, providers::{Provider, ProviderBuilder}, signers::icp::IcpSigner, transports::icp::{IcpConfig, RpcApi, RpcService}
+    network::{Network, TxSigner}, providers::{Provider, ProviderBuilder}, signers::icp::IcpSigner, transports::icp::{IcpConfig, RpcApi, RpcService}
 };
-use alloy::signers::Signer;
 // use ethers_core::types::TransactionRequest;
 // use alloy_rpc_types_eth::TransactionRequest;
 use alloy::network::Ethereum;
 // use alloy::network::TransactionBuilder;
+// use alloy_consensus::TxLegacy; 
+use alloy::consensus::TxLegacy;
+use alloy::consensus::Signed;
+use alloy::consensus::SignableTransaction;
+use alloy_rlp::Encodable;
+use alloy::network::TransactionBuilder;
 
 pub const EVM_RPC_CANISTER_ID: Principal =
     Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
 pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
 
+fn get_rpc_service_sepolia() -> RpcService {
+    // Use EVM RPC Canister with Alchemy for Sepolia
+    // RpcService::EthSepolia(EthSepoliaService::Alchemy)
+    
+    // Removing the custom proxy configuration since it can lead to inconsistent results
+    // when getting latest blocks across different nodes in the subnet
+    RpcService::Custom(RpcApi {
+        url: "https://ic-alloy-evm-rpc-proxy.kristofer-977.workers.dev/eth-sepolia".to_string(),
+        headers: None,
+    })
+}
+
 #[ic_cdk::update]
-async fn get_latest_ethereum_block() -> Block {
-    let rpc_providers = RpcServices::EthMainnet(Some(vec![EthMainnetService::Cloudflare]));
-
-    let cycles = 10_000_000_000;
-    let (result,) =
-        EvmRpcCanister::eth_get_block_by_number(
-            &EVM_RPC,
-            rpc_providers, 
-            None, 
-            BlockTag::Latest, 
-            cycles
-        )
-            .await
-            .expect("Call failed");
-
+async fn get_latest_ethereum_block() -> Result<String, String> {
+    let rpc_service = get_rpc_service_sepolia();
+    let config = IcpConfig::new(rpc_service);
+    let provider = ProviderBuilder::new().on_icp(config);
+    let result = provider.get_block_number().await;
+    
+    // Get the latest block
     match result {
-        MultiGetBlockByNumberResult::Consistent(r) => match r {
-            GetBlockByNumberResult::Ok(block) => block,
-            GetBlockByNumberResult::Err(err) => panic!("{err:?}"),
-        },
-        MultiGetBlockByNumberResult::Inconsistent(_) => {
-            panic!("RPC providers gave inconsistent results")
-        }
+        Ok(block) => Ok(block.to_string()),
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -103,7 +103,7 @@ fn get_rpc_service() -> RpcService {
 }
 
 async fn create_icp_signer() -> IcpSigner {
-    let key_name = "dfx_test_key".to_string(); // For local testing
+    let key_name = "key_1".to_string(); // For mainnet deployment
     IcpSigner::new(vec![], &key_name, None).await.unwrap()
 }
 
@@ -115,20 +115,70 @@ async fn get_canister_eth_address() -> String {
 
 #[ic_cdk::update]
 async fn call_increase_count() -> Result<String, String> {
-    // let signer = create_icp_signer().await;
+    let signer = create_icp_signer().await;
     let config = IcpConfig::new(get_rpc_service());
     let provider = ProviderBuilder::new().on_icp(config);
     let abi = get_abi();
 
-    let tx = <Ethereum as Network>::TransactionRequest::default()
-    .to(CONTRACT_ADDRESS.parse().unwrap())
-    .input(abi.function("increaseCount")
-        .unwrap()
-        .encode_input(&[])
-        .unwrap()
-        .into());
+    // Get the current nonce for the signer's address
+    let nonce = provider.get_transaction_count(signer.address())
+        .await
+        .map_err(|e| format!("Failed to get nonce: {:?}", e))?;
 
-    let result = provider.send_transaction(tx).await;
+    // Get current gas price
+    let gas_price = provider.get_gas_price()
+        .await
+        .map_err(|e| format!("Failed to get gas price: {:?}", e))?;
+    
+    // Create the transaction request
+    let mut request = <Ethereum as Network>::TransactionRequest::default()
+        .to(CONTRACT_ADDRESS.parse().unwrap())
+        .input(abi.function("increaseCount")
+            .unwrap()
+            .encode_input(&[])
+            .unwrap()
+            .into())
+        .nonce(nonce);
+    
+    request.set_gas_price(gas_price);
+    // request.set_gas(100_000);
+
+
+    // Convert to a legacy transaction type that implements SignableTransaction
+    let mut tx = TxLegacy {
+        nonce: request.nonce.unwrap_or_default(),
+        gas_price: request.gas_price.unwrap_or_default(),
+        gas_limit: request.gas.unwrap_or_default().try_into().unwrap(),  // Convert u128 to u64
+        to: request.to.unwrap_or_default(),  // Unwrap the Option<TxKind>
+        value: request.value.unwrap_or_default(),
+        input: request.input.data.unwrap_or_default(), // Use input instead of data
+        chain_id: Some(11155111_u64),
+    };    
+    
+    // Sign the transaction
+    let signature = signer.sign_transaction(&mut tx)
+        .await
+        .map_err(|e| format!("Failed to sign transaction: {:?}", e))?;
+
+    // Get the transaction hash
+    let hash = tx.signature_hash();
+
+    // Create a signed transaction
+    let signed_tx = Signed::new_unchecked(tx, signature, hash);
+
+    // Get the components of the signed transaction
+    let (tx, signature, _hash) = signed_tx.into_parts();
+
+    // Create a new signed transaction with all components
+    // let signed_tx = Signed::new_unchecked(tx.clone(), signature, hash);
+
+    // Encode the full signed transaction
+    let mut encoded_tx = Vec::new();
+    tx.encode(&mut encoded_tx);
+    signature.encode(&mut encoded_tx);
+
+    // Send the raw transaction
+    let result = provider.send_raw_transaction(&encoded_tx).await;
 
     match result {
         Ok(pending_tx) => {

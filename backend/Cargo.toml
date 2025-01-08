@@ -27,7 +27,9 @@ alloy = { git = "https://github.com/ic-alloy/ic-alloy.git", tag = "v0.3.5-icp.1"
   "sol-types",
   "json",
   "contract",
+  "rlp", 
 ] }
 alloy-primitives = "0.8.18"
 tower = "0.5.1"
 alloy-rpc-types-eth = "0.9.2"
+alloy-rlp = "0.3.10"

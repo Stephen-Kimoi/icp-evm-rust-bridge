@@ -1,26 +1,3 @@
-type Block = record {
-  miner : text;
-  totalDifficulty : nat;
-  receiptsRoot : text;
-  stateRoot : text;
-  hash : text;
-  difficulty : nat;
-  size : nat;
-  uncles : vec text;
-  baseFeePerGas : nat;
-  extraData : text;
-  transactionsRoot : opt text;
-  sha3Uncles : text;
-  nonce : nat;
-  number : nat;
-  timestamp : nat;
-  transactions : vec text;
-  gasLimit : nat;
-  logsBloom : text;
-  parentHash : text;
-  gasUsed : nat;
-  mixHash : text;
-};
 type Result = variant { Ok : text; Err : text };
 type Result_1 = variant { Ok : nat64; Err : text };
 service : {
@@ -28,7 +5,7 @@ service : {
   call_increase_count : () -> (Result);
   get_canister_eth_address : () -> (text);
   get_count : () -> (Result_1);
-  get_latest_ethereum_block : () -> (Block);
+  get_latest_ethereum_block : () -> (Result);
   get_stored_transaction_hashes : () -> (vec text);
   store_transaction_hash : (text) -> ();
 }
