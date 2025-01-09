@@ -7,7 +7,7 @@ use store_transactions::{store_transaction_hash, get_transaction_hashes};
 use evm_rpc_canister_types::EvmRpcCanister;
 // use k256::Secp256k1;
 use alloy::{
-    network::{Network, TxSigner}, providers::{Provider, ProviderBuilder}, signers::icp::IcpSigner, transports::icp::{IcpConfig, RpcApi, RpcService}
+    network::{Network, TxSigner}, providers::{Provider, ProviderBuilder}, signers::icp::IcpSigner, transports::icp::{EthSepoliaService, IcpConfig, RpcApi, RpcService}
 };
 // use ethers_core::types::TransactionRequest;
 // use alloy_rpc_types_eth::TransactionRequest;
@@ -96,6 +96,7 @@ fn get_abi() -> ethers_core::abi::Contract {
 }
 
 fn get_rpc_service() -> RpcService {
+    // RpcService::EthSepolia(EthSepoliaService::Alchemy)
     RpcService::Custom(RpcApi {
         url: "https://ic-alloy-evm-rpc-proxy.kristofer-977.workers.dev/eth-sepolia".to_string(),
         headers: None,
@@ -125,11 +126,6 @@ async fn call_increase_count() -> Result<String, String> {
         .await
         .map_err(|e| format!("Failed to get nonce: {:?}", e))?;
 
-    // Get current gas price
-    let gas_price = provider.get_gas_price()
-        .await
-        .map_err(|e| format!("Failed to get gas price: {:?}", e))?;
-    
     // Create the transaction request
     let mut request = <Ethereum as Network>::TransactionRequest::default()
         .to(CONTRACT_ADDRESS.parse().unwrap())
@@ -140,18 +136,16 @@ async fn call_increase_count() -> Result<String, String> {
             .into())
         .nonce(nonce);
     
-    request.set_gas_price(gas_price);
-    // request.set_gas(100_000);
-
+    request.set_gas_limit(100_000);
 
     // Convert to a legacy transaction type that implements SignableTransaction
     let mut tx = TxLegacy {
         nonce: request.nonce.unwrap_or_default(),
         gas_price: request.gas_price.unwrap_or_default(),
-        gas_limit: request.gas.unwrap_or_default().try_into().unwrap(),  // Convert u128 to u64
-        to: request.to.unwrap_or_default(),  // Unwrap the Option<TxKind>
+        gas_limit: request.gas.unwrap_or_default().try_into().unwrap(),
+        to: request.to.unwrap_or_default(),
         value: request.value.unwrap_or_default(),
-        input: request.input.data.unwrap_or_default(), // Use input instead of data
+        input: request.input.data.unwrap_or_default(),
         chain_id: Some(11155111_u64),
     };    
     
@@ -163,19 +157,15 @@ async fn call_increase_count() -> Result<String, String> {
     // Get the transaction hash
     let hash = tx.signature_hash();
 
-    // Create a signed transaction
+   // Create a signed transaction
     let signed_tx = Signed::new_unchecked(tx, signature, hash);
 
-    // Get the components of the signed transaction
-    let (tx, signature, _hash) = signed_tx.into_parts();
-
-    // Create a new signed transaction with all components
-    // let signed_tx = Signed::new_unchecked(tx.clone(), signature, hash);
+    // Get the inner transaction from Signed
+    let tx_for_sending = signed_tx.tx();
 
     // Encode the full signed transaction
     let mut encoded_tx = Vec::new();
-    tx.encode(&mut encoded_tx);
-    signature.encode(&mut encoded_tx);
+    tx_for_sending.encode(&mut encoded_tx); 
 
     // Send the raw transaction
     let result = provider.send_raw_transaction(&encoded_tx).await;
@@ -186,7 +176,9 @@ async fn call_increase_count() -> Result<String, String> {
             store_transaction_hash(hash.clone());
             Ok(format!("Increased count. Transaction hash: {}", hash))
         },
-        Err(e) => Err(format!("Failed to increase count: {:?}", e))
+        Err(e) => {
+            Err(format!("Failed to increase count: {:?}", e))
+        }        
     }
 }
 
