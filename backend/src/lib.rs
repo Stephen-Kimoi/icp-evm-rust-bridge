@@ -19,6 +19,8 @@ use alloy::consensus::Signed;
 use alloy::consensus::SignableTransaction;
 use alloy_rlp::Encodable;
 use alloy::network::TransactionBuilder;
+use alloy::primitives::{Address, U256, TxKind};
+use ic_cdk::api::management_canister::provisional::CanisterId;
 
 pub const EVM_RPC_CANISTER_ID: Principal =
     Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
@@ -126,59 +128,92 @@ async fn call_increase_count() -> Result<String, String> {
         .await
         .map_err(|e| format!("Failed to get nonce: {:?}", e))?;
 
-    // Create the transaction request
-    let mut request = <Ethereum as Network>::TransactionRequest::default()
-        .to(CONTRACT_ADDRESS.parse().unwrap())
-        .input(abi.function("increaseCount")
-            .unwrap()
-            .encode_input(&[])
-            .unwrap()
-            .into())
-        .nonce(nonce);
-    
-    request.set_gas_limit(100_000);
+    // Get the current gas price
+    let gas_price = provider.get_gas_price()
+        .await
+        .map_err(|e| format!("Failed to get gas price: {:?}", e))?;
 
-    // Convert to a legacy transaction type that implements SignableTransaction
+    // Calculate increased gas price (120%)
+    let adjusted_gas_price = gas_price + (gas_price / 5); // Add 20%
+
+    // Parse contract address using Address type
+    let contract_addr = Address::parse_checksummed(CONTRACT_ADDRESS, None)
+        .map_err(|e| format!("Failed to parse contract address: {:?}", e))?;
+
+    let encoded_function_call = abi.function("increaseCount")
+        .unwrap()
+        .encode_input(&[])
+        .unwrap();
+
+    // Clone the encoded call data since we'll need it twice
+    let encoded_call_data = encoded_function_call.clone();
+
+    // Create the legacy transaction directly
     let mut tx = TxLegacy {
-        nonce: request.nonce.unwrap_or_default(),
-        gas_price: request.gas_price.unwrap_or_default(),
-        gas_limit: request.gas.unwrap_or_default().try_into().unwrap(),
-        to: request.to.unwrap_or_default(),
-        value: request.value.unwrap_or_default(),
-        input: request.input.data.unwrap_or_default(),
-        chain_id: Some(11155111_u64),
+        nonce,
+        gas_price: adjusted_gas_price,
+        gas_limit: 200_000,
+        to: TxKind::Call(contract_addr),
+        value: U256::ZERO,
+        input: encoded_function_call.into(),
+        chain_id: Some(11155111_u64), // Sepolia chain ID
     };    
-    
-    // Sign the transaction
+
+    // Sign and encode the transaction
     let signature = signer.sign_transaction(&mut tx)
         .await
         .map_err(|e| format!("Failed to sign transaction: {:?}", e))?;
 
-    // Get the transaction hash
     let hash = tx.signature_hash();
-
-   // Create a signed transaction
     let signed_tx = Signed::new_unchecked(tx, signature, hash);
-
-    // Get the inner transaction from Signed
     let tx_for_sending = signed_tx.tx();
 
-    // Encode the full signed transaction
     let mut encoded_tx = Vec::new();
-    tx_for_sending.encode(&mut encoded_tx); 
+    tx_for_sending.encode(&mut encoded_tx);
 
-    // Send the raw transaction
-    let result = provider.send_raw_transaction(&encoded_tx).await;
-
-    match result {
+    // Try to send the transaction
+    match provider.send_raw_transaction(&encoded_tx).await {
         Ok(pending_tx) => {
             let hash = pending_tx.tx_hash().to_string();
             store_transaction_hash(hash.clone());
             Ok(format!("Increased count. Transaction hash: {}", hash))
         },
         Err(e) => {
-            Err(format!("Failed to increase count: {:?}", e))
-        }        
+            // If first attempt fails, try one more time with higher gas price
+            let higher_gas_price = adjusted_gas_price + (adjusted_gas_price / 2); // Add 50% more
+            
+            let mut retry_tx = TxLegacy {
+                nonce,
+                gas_price: higher_gas_price,
+                gas_limit: 300_000, // Increase gas limit for retry
+                to: TxKind::Call(contract_addr),
+                value: U256::ZERO,
+                input: encoded_call_data.into(),
+                chain_id: Some(11155111_u64),
+            };
+
+            let retry_signature = signer.sign_transaction(&mut retry_tx)
+                .await
+                .map_err(|e| format!("Failed to sign retry transaction: {:?}", e))?;
+
+            let retry_hash = retry_tx.signature_hash();
+            let retry_signed_tx = Signed::new_unchecked(retry_tx, retry_signature, retry_hash);
+            let retry_tx_for_sending = retry_signed_tx.tx();
+
+            let mut retry_encoded_tx = Vec::new();
+            retry_tx_for_sending.encode(&mut retry_encoded_tx);
+
+            match provider.send_raw_transaction(&retry_encoded_tx).await {
+                Ok(pending_tx) => {
+                    let hash = pending_tx.tx_hash().to_string();
+                    store_transaction_hash(hash.clone());
+                    Ok(format!("Increased count on retry. Transaction hash: {}", hash))
+                },
+                Err(retry_e) => {
+                    Err(format!("Transaction failed on both attempts. Initial error: {:?}, Retry error: {:?}", e, retry_e))
+                }
+            }
+        }
     }
 }
 
@@ -241,5 +276,35 @@ async fn call_decrease_count() -> Result<String, String> {
 async fn get_stored_transaction_hashes() -> Vec<String> {
     get_transaction_hashes()
 }
+
+#[ic_cdk::update]
+async fn check_balance() -> Result<String, String> {
+    let signer = create_icp_signer().await;
+    let config = IcpConfig::new(get_rpc_service());
+    let provider = ProviderBuilder::new().on_icp(config);
+    
+    match provider.get_balance(signer.address()).await {
+        Ok(balance) => Ok(balance.to_string()),
+        Err(e) => Err(format!("Failed to get balance: {:?}", e))
+    }
+}
+
+// #[ic_cdk::update]
+// async fn check_transaction_status(tx_hash: String) -> Result<String, String> {
+//     let config = IcpConfig::new(get_rpc_service());
+//     let provider = ProviderBuilder::new().on_icp(config);
+    
+//     match provider.get_transaction_receipt(&tx_hash.parse().unwrap()).await {
+//         Ok(Some(receipt)) => {
+//             Ok(format!("Transaction status: {:?}", receipt.status))
+//         },
+//         Ok(None) => {
+//             Ok("Transaction pending".to_string())
+//         },
+//         Err(e) => {
+//             Err(format!("Failed to get transaction status: {:?}", e))
+//         }
+//     }
+// }
 
 ic_cdk::export_candid!();  
